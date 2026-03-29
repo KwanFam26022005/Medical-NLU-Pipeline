@@ -25,7 +25,7 @@ VIHEALTHBERT_SYLLABLE = "demdecuong/vihealthbert-base-syllable"
 # 📍 TRẠM 1: ACRONYM DISAMBIGUATION (WSD)
 # ============================================================
 ACRONYM_MODEL_NAME = VIHEALTHBERT_SYLLABLE
-ACRONYM_MODEL_DIR = MODEL_DIR / "acronym_wsd"
+ACRONYM_MODEL_DIR = "KwanFam26022005/model1-acronym-wsd"
 ACRONYM_DATA_DIR = DATA_DIR / "acrDrAid"
 ACRONYM_DICT_PATH = ACRONYM_DATA_DIR / "dictionary.json"
 
