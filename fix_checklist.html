@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fix Checklist — Acronym WSD</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sora:wght@300;400;600;700&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e2a;
+    --border: #252936;
+    --red: #ff4757;
+    --red-dim: rgba(255,71,87,0.12);
+    --yellow: #ffd32a;
+    --yellow-dim: rgba(255,211,42,0.10);
+    --green: #2ed573;
+    --green-dim: rgba(46,213,115,0.10);
+    --blue: #1e90ff;
+    --blue-dim: rgba(30,144,255,0.10);
+    --purple: #a55eea;
+    --text: #e8eaf2;
+    --text-dim: #7a7f96;
+    --text-dimmer: #454960;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Sora', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.7;
+    padding: 48px 24px 80px;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 880px;
+    margin: 0 auto;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 32px;
+    margin-bottom: 40px;
+  }
+
+  .label-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .label-tag::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 1px;
+    background: var(--blue);
+  }
+
+  h1 {
+    font-family: var(--sans);
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 14px;
+    font-weight: 300;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 24px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .stat-num {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    margin-bottom: 40px;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+    font-family: var(--mono);
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── ISSUE CARD ── */
+  .issue {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+    cursor: pointer;
+  }
+
+  .issue:hover { border-color: #353a52; }
+  .issue.done { opacity: 0.45; }
+  .issue.done .issue-title { text-decoration: line-through; text-decoration-color: var(--text-dimmer); }
+
+  .issue-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 18px;
+  }
+
+  .checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid var(--border);
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    background: transparent;
+  }
+
+  .issue.done .checkbox {
+    border-color: var(--green);
+    background: var(--green);
+  }
+
+  .checkbox-inner {
+    width: 10px;
+    height: 10px;
+    display: none;
+  }
+
+  .issue.done .checkbox-inner { display: block; }
+
+  .issue-meta {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .issue-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+
+  .badge-critical { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,71,87,0.3); }
+  .badge-medium   { background: var(--yellow-dim); color: var(--yellow); border: 1px solid rgba(255,211,42,0.3); }
+  .badge-minor    { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(30,144,255,0.3); }
+
+  .file-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--purple);
+    background: rgba(165,94,234,0.1);
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+
+  .issue-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .issue-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    line-height: 1.6;
+  }
+
+  .issue-body {
+    padding: 0 18px 18px 50px;
+    display: none;
+  }
+
+  .issue.open .issue-body { display: block; }
+
+  .toggle-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 12px;
+    transition: all 0.15s;
+    margin-top: 2px;
+  }
+  .toggle-btn:hover { border-color: #454960; color: var(--text); }
+
+  /* ── CODE BLOCK ── */
+  .code-block {
+    background: #090b10;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 12px 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.75;
+  }
+
+  .code-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    background: #0d0f14;
+  }
+
+  .code-lang {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dimmer);
+  }
+
+  .code-label {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .code-content { padding: 14px; overflow-x: auto; }
+
+  .c-bad  { color: var(--red); }
+  .c-good { color: var(--green); }
+  .c-gray { color: var(--text-dimmer); }
+  .c-str  { color: #f9c74f; }
+  .c-kw   { color: #8ecae6; }
+  .c-fn   { color: #a8dadc; }
+  .c-num  { color: #90e0ef; }
+  .c-cmt  { color: #4a5072; font-style: italic; }
+
+  .impact-box {
+    background: var(--surface2);
+    border-left: 3px solid;
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    margin-top: 10px;
+    font-size: 13px;
+  }
+
+  .impact-box.red   { border-color: var(--red); }
+  .impact-box.yellow{ border-color: var(--yellow); }
+  .impact-box.blue  { border-color: var(--blue); }
+
+  .impact-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+
+  .impact-box.red    .impact-title { color: var(--red); }
+  .impact-box.yellow .impact-title { color: var(--yellow); }
+  .impact-box.blue   .impact-title { color: var(--blue); }
+
+  /* ── PROGRESS BAR ── */
+  .progress-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 36px;
+  }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .progress-title { font-size: 13px; font-weight: 600; }
+  .progress-pct {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--green);
+  }
+
+  .progress-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--green));
+    border-radius: 99px;
+    width: 0%;
+    transition: width 0.6s ease;
+  }
+
+  .progress-sub {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+  }
+
+  .dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    margin-right: 4px;
+  }
+  .dot-red    { background: var(--red); }
+  .dot-yellow { background: var(--yellow); }
+  .dot-blue   { background: var(--blue); }
+  .dot-green  { background: var(--green); }
+
+  ul.plain { list-style: none; }
+  ul.plain li { padding: 3px 0; color: var(--text-dim); font-size: 13px; }
+  ul.plain li::before { content: '→ '; color: var(--text-dimmer); }
+
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+
+  @media (max-width: 600px) {
+    h1 { font-size: 22px; }
+    .stats-row { gap: 12px; }
+    body { padding: 24px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="label-tag">Acronym WSD · acrDrAid</div>
+    <h1>Fix Checklist</h1>
+    <div class="subtitle">Tổng hợp các vấn đề cần sửa — phân loại theo mức độ ưu tiên</div>
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-num" style="color:var(--red)">2</div>
+        <div class="stat-label">Critical<br>cần fix ngay</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:var(--yellow)">3</div>
+        <div class="stat-label">Medium<br>nên fix sớm</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:var(--blue)">2</div>
+        <div class="stat-label">Minor<br>cải tiến thêm</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" style="color:var(--text-dim)">7</div>
+        <div class="stat-label">Tổng<br>vấn đề</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap">
+    <div class="progress-header">
+      <span class="progress-title">Tiến độ fix</span>
+      <span class="progress-pct" id="pct">0 / 7</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="fill"></div></div>
+    <div class="progress-sub">
+      <span><span class="dot dot-red"></span>Critical: <span id="cnt-c">0/2</span></span>
+      <span><span class="dot dot-yellow"></span>Medium: <span id="cnt-m">0/3</span></span>
+      <span><span class="dot dot-blue"></span>Minor: <span id="cnt-i">0/2</span></span>
+    </div>
+  </div>
+
+  <!-- ─── CRITICAL ─── -->
+  <div class="section">
+    <div class="section-title">🔴 Critical</div>
+
+    <!-- ISSUE 1 -->
+    <div class="issue" id="i1">
+      <div class="issue-head">
+        <div class="checkbox" onclick="toggle('i1')">
+          <svg class="checkbox-inner" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#0d0f14" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="issue-meta">
+          <div class="issue-top">
+            <span class="badge badge-critical">Critical #1</span>
+            <span class="file-tag">train_acronym.py</span>
+            <span class="file-tag">data_loader.py</span>
+          </div>
+          <div class="issue-title">Dictionary Constraint không được dùng trong Training</div>
+          <div class="issue-desc">Loss tính trên toàn bộ 280 classes, không mask theo valid expansions — mâu thuẫn hoàn toàn với inference</div>
+        </div>
+        <button class="toggle-btn" onclick="expand('i1')">▾</button>
+      </div>
+      <div class="issue-body">
+        <div class="impact-box red">
+          <div class="impact-title">⚡ Impact</div>
+          Model bị phạt khi nhầm sang expansions không bao giờ cạnh tranh với nhau (VD: expansion của "bt" và "kt" không liên quan). Lãng phí capacity + gradient signal nhiễu.
+        </div>
+
+        <div class="code-block">
+          <div class="code-head">
+            <span class="code-lang">Python</span>
+            <span class="code-label">Nguyên nhân gốc — data_loader.py</span>
+          </div>
+          <div class="code-content"><pre><span class="c-cmt"># prepare_datasets() — acronym bị mất sau đây</span>
+<span class="c-bad">train_ds = self.tokenize_and_encode(train_samples)  <span class="c-cmt"># ❌ không include_acronym</span></span>
+
+<span class="c-cmt"># tokenize_and_encode() — dù lưu acronym vào dict...</span>
+<span class="c-bad">dataset.set_format(<span class="c-str">"torch"</span>, columns=[<span class="c-str">"input_ids"</span>, <span class="c-str">"attention_mask"</span>, <span class="c-str">"labels"</span>])
+<span class="c-cmt"># ❌ "acronym" column bị drop → Trainer không biết constraint nào cần dùng</span></span></pre></div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-head">
+            <span class="code-lang">Python</span>
+            <span class="code-label">Fix — data_loader.py</span>
+          </div>
+          <div class="code-content"><pre><span class="c-cmt"># Bước 1: Encode acronym thành integer index</span>
+<span class="c-kw">def</span> <span class="c-fn">build_label_mapping</span>(self, samples):
+    unique_expansions = sorted(set(s[<span class="c-str">"expansion"</span>] <span class="c-kw">for</span> s <span class="c-kw">in</span> samples))
+    self.expansion2id = {exp: idx <span class="c-kw">for</span> idx, exp <span class="c-kw">in</span> enumerate(unique_expansions)}
+<span class="c-good">    unique_acronyms = sorted(set(s[<span class="c-str">"acronym"</span>].lower() <span class="c-kw">for</span> s <span class="c-kw">in</span> samples))
+    self.acronym2id = {acr: idx <span class="c-kw">for</span> idx, acr <span class="c-kw">in</span> enumerate(unique_acronyms)}</span>
+
+<span class="c-cmt"># Bước 2: Thêm acronym_id vào Dataset tensor</span>
+<span class="c-kw">def</span> <span class="c-fn">tokenize_and_encode</span>(self, samples):
+    ...
+    data_dict = {
+        <span class="c-str">"input_ids"</span>: ..., <span class="c-str">"attention_mask"</span>: ..., <span class="c-str">"labels"</span>: labels,
+<span class="c-good">        <span class="c-str">"acronym_ids"</span>: [self.acronym2id.get(s[<span class="c-str">"acronym"</span>].lower(), <span class="c-num">0</span>) <span class="c-kw">for</span> s <span class="c-kw">in</span> samples],</span>
+    }
+<span class="c-good">    dataset.set_format(<span class="c-str">"torch"</span>, columns=[<span class="c-str">"input_ids"</span>, <span class="c-str">"attention_mask"</span>, <span class="c-str">"labels"</span>, <span class="c-str">"acronym_ids"</span>])</span></pre></div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-head">
+            <span class="code-lang">Python</span>
+            <span class="code-label">Fix — train_acronym.py · FocalLossTrainer</span>
+          </div>
+          <div class="code-content"><pre><span class="c-kw">def</span> <span class="c-fn">__init__</span>(self, constraint_matrix=<span class="c-kw">None</span>, **kwargs):
+    super().__init__(**kwargs)
+<span class="c-good">    self.constraint_matrix = constraint_matrix  <span class="c-cmt"># Tensor (num_acronyms, num_classes) bool</span></span>
+
+<span class="c-kw">def</span> <span class="c-fn">compute_loss</span>(self, model, inputs, return_outputs=<span class="c-kw">False</span>, **kwargs):
+    labels = inputs.pop(<span class="c-str">"labels"</span>)
+<span class="c-good">    acronym_ids = inputs.pop(<span class="c-str">"acronym_ids"</span>, <span class="c-kw">None</span>)</span>
+    outputs = model(**inputs)
+    logits = outputs.logits
+
+<span class="c-good">    <span class="c-cmt"># Apply constraint mask trước khi tính loss</span>
+    <span class="c-kw">if</span> acronym_ids <span class="c-kw">is not None</span> <span class="c-kw">and</span> self.constraint_matrix <span class="c-kw">is not None</span>:
+        mask = self.constraint_matrix[acronym_ids].to(logits.device)  <span class="c-cmt"># (B, C)</span>
+        logits = logits.masked_fill(~mask, <span class="c-fn">float</span>(<span class="c-str">"-inf"</span>))</span>
+
+    loss = self.focal_loss_fn(logits, labels)
+    <span class="c-kw">return</span> (loss, outputs) <span class="c-kw">if</span> return_outputs <span class="c-kw">else</span> loss
+
+<span class="c-cmt"># Khởi tạo constraint_matrix trong main()</span>
+<span class="c-good">constraint_matrix = torch.zeros(len(loader.acronym2id), num_labels, dtype=torch.bool)
+<span class="c-kw">for</span> acr, valid_ids <span class="c-kw">in</span> loader.acronym_constraint.items():
+    acr_id = loader.acronym2id.get(acr)
+    <span class="c-kw">if</span> acr_id <span class="c-kw">is not None</span>:
+        constraint_matrix[acr_id, valid_ids] = <span class="c-kw">True</span>
+
+trainer = FocalLossTrainer(constraint_matrix=constraint_matrix, ...)</span></pre></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ISSUE 2 -->
+    <div class="issue" id="i2">
+      <div class="issue-head">
+        <div class="checkbox" onclick="toggle('i2')">
+          <svg class="checkbox-inner" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#0d0f14" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="issue-meta">
+          <div class="issue-top">
+            <span class="badge badge-critical">Critical #2</span>
+            <span class="file-tag">data_loader.py</span>
+            <span class="file-tag">train_acronym.py</span>
+          </div>
+          <div class="issue-title">Static padding max_length=384 — 82% input là padding tokens</div>
+          <div class="issue-desc">Dataset trung bình 30 tokens, sau prompt ~60 tokens. max_length=384 lãng phí VRAM và thời gian attention</div>
+        </div>
+        <button class="toggle-btn" onclick="expand('i2')">▾</button>
+      </div>
+      <div class="issue-body">
+        <div class="impact-box red">
+          <div class="impact-title">⚡ Impact</div>
+          Mỗi batch xử lý 384 - 60 = <strong>324 token padding vô dụng per sample</strong>. Với batch_size=32, đó là ~10,000 attention ops lãng phí mỗi step. Training chậm ~3-4× không cần thiết.
+        </div>
+
+        <div class="code-block">
+          <div class="code-head"><span class="code-lang">Python</span><span class="code-label">Hiện tại — data_loader.py</span></div>
+          <div class="code-content"><pre><span class="c-bad">encodings = self.tokenizer(
+    texts,
+    max_length=self.max_length,  <span class="c-cmt"># ❌ 384</span>
+    padding=<span class="c-str">"max_length"</span>,          <span class="c-cmt"># ❌ pad ngay lúc tokenize</span>
+    truncation=<span class="c-kw">True</span>,
+    return_tensors=<span class="c-str">"pt"</span>,           <span class="c-cmt"># ❌ không thể dùng DataCollator sau</span>
+)</span></pre></div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-head"><span class="code-lang">Python</span><span class="code-label">Fix — data_loader.py + train_acronym.py</span></div>
+          <div class="code-content"><pre><span class="c-cmt"># data_loader.py — tokenize không pad</span>
+<span class="c-good">encodings = self.tokenizer(
+    texts,
+    max_length=<span class="c-num">128</span>,    <span class="c-cmt"># 128 là quá đủ cho acrDrAid (avg 60 tokens)</span>
+    truncation=<span class="c-kw">True</span>,   <span class="c-cmt"># không padding="max_length"</span>
+)
+<span class="c-cmt"># Lưu dạng list (không phải tensor) để DataCollator pad theo batch</span>
+data_dict = {
+    <span class="c-str">"input_ids"</span>: encodings[<span class="c-str">"input_ids"</span>],
+    <span class="c-str">"attention_mask"</span>: encodings[<span class="c-str">"attention_mask"</span>],
+    ...
+}
+dataset = Dataset.from_dict(data_dict)  <span class="c-cmt"># không set_format("pt") sớm</span></span>
+
+<span class="c-cmt"># train_acronym.py — pad động theo batch</span>
+<span class="c-good"><span class="c-kw">from</span> transformers <span class="c-kw">import</span> DataCollatorWithPadding
+trainer = FocalLossTrainer(
+    ...,
+    data_collator=DataCollatorWithPadding(tokenizer, pad_to_multiple_of=<span class="c-num">8</span>),
+)</span></pre></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── MEDIUM ─── -->
+  <div class="section">
+    <div class="section-title">🟡 Medium</div>
+
+    <!-- ISSUE 3 -->
+    <div class="issue" id="i3">
+      <div class="issue-head">
+        <div class="checkbox" onclick="toggle('i3')">
+          <svg class="checkbox-inner" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#0d0f14" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="issue-meta">
+          <div class="issue-top">
+            <span class="badge badge-medium">Medium #3</span>
+            <span class="file-tag">prepare_acronym_data.py</span>
+            <span class="file-tag">train_acronym.py</span>
+          </div>
+          <div class="issue-title">23% test expansions không có trong training — chưa xử lý</div>
+          <div class="issue-desc">prob. overlap expansion over train set: 77.06% → ~260 mẫu test sẽ không bao giờ predict đúng được</div>
+        </div>
+        <button class="toggle-btn" onclick="expand('i3')">▾</button>
+      </div>
+      <div class="issue-body">
+        <div class="impact-box yellow">
+          <div class="impact-title">⚡ Impact</div>
+          Accuracy trên test set bị capped tự nhiên ở ~77% ngay cả với model hoàn hảo. Cần tách riêng "seen accuracy" vs "unseen accuracy" trong evaluation để đánh giá model thực sự.
+        </div>
+        <div class="code-block">
+          <div class="code-head"><span class="code-lang">Python</span><span class="code-label">Fix — thêm vào compute_metrics hoặc evaluation script</span></div>
+          <div class="code-content"><pre><span class="c-good"><span class="c-kw">def</span> <span class="c-fn">compute_metrics_detailed</span>(eval_pred, eval_dataset, id2expansion, expansion2id):
+    logits, labels = eval_pred
+    preds = np.argmax(logits, axis=-<span class="c-num">1</span>)
+
+    seen_mask, unseen_mask = [], []
+    <span class="c-kw">for</span> label <span class="c-kw">in</span> labels:
+        exp = id2expansion.get(int(label), <span class="c-str">""</span>)
+        seen = exp <span class="c-kw">in</span> expansion2id  <span class="c-cmt"># có trong train không?</span>
+        seen_mask.append(seen)
+        unseen_mask.append(<span class="c-kw">not</span> seen)
+
+    seen_mask = np.array(seen_mask)
+    <span class="c-kw">return</span> {
+        <span class="c-str">"acc_overall"</span>: (preds == labels).mean(),
+        <span class="c-str">"acc_seen"</span>:    (preds[seen_mask] == labels[seen_mask]).mean(),
+        <span class="c-str">"acc_unseen"</span>:  (preds[unseen_mask] == labels[unseen_mask]).mean()
+            <span class="c-kw">if</span> unseen_mask.any() <span class="c-kw">else</span> <span class="c-num">0.0</span>,
+    }</span></pre></div>
+        </div>
+        <div class="impact-box blue" style="margin-top:10px">
+          <div class="impact-title">💡 Giải pháp dài hạn</div>
+          Với unseen expansions: dùng Bi-encoder similarity thay vì classification thuần — encode expansion text và so sánh cosine với context embedding. Model có thể xử lý expansion chưa thấy khi train.
+        </div>
+      </div>
+    </div>
+
+    <!-- ISSUE 4 -->
+    <div class="issue" id="i4">
+      <div class="issue-head">
+        <div class="checkbox" onclick="toggle('i4')">
+          <svg class="checkbox-inner" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#0d0f14" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="issue-meta">
+          <div class="issue-top">
+            <span class="badge badge-medium">Medium #4</span>
+            <span class="file-tag">train_acronym.py</span>
+          </div>
+          <div class="issue-title">Focal Loss + Label Smoothing tương tác không rõ ràng</div>
+          <div class="issue-desc">Với 280 classes, smooth mass per class ≈ 0.00036 — quá nhỏ để có nghĩa. Gamma của focal loss suy yếu trên soft targets</div>
+        </div>
+        <button class="toggle-btn" onclick="expand('i4')">▾</button>
+      </div>
+      <div class="issue-body">
+        <div class="impact-box yellow">
+          <div class="impact-title">⚡ Impact</div>
+          label_smoothing=0.1 phân phối 10% mass ra 280 classes → mỗi "wrong" class chỉ nhận 0.036%. Focal weight (1−p)^2 tính dựa trên soft targets sẽ cho giá trị sai so với hard targets. Hai kỹ thuật tranh nhau thay vì cộng hưởng.
+        </div>
+        <div class="code-block">
+          <div class="code-head"><span class="code-lang">Python</span><span class="code-label">Thứ tự thử nghiệm</span></div>
+          <div class="code-content"><pre><span class="c-cmt"># Thử theo thứ tự, eval sau mỗi bước:</span>
+<span class="c-cmt"># 1. Baseline: chỉ Focal Loss (γ=2), không smoothing</span>
+<span class="c-good">FocalLoss(gamma=<span class="c-num">2.0</span>, label_smoothing=<span class="c-num">0.0</span>)</span>
+
+<span class="c-cmt"># 2. Thêm smoothing nhỏ hơn nếu cần tránh overfit</span>
+<span class="c-good">FocalLoss(gamma=<span class="c-num">2.0</span>, label_smoothing=<span class="c-num">0.03</span>)  <span class="c-cmt"># 0.03 / 280 classes = hợp lý hơn</span></span>
+
+<span class="c-cmt"># 3. Hoặc dùng CE thường với class_weights — đơn giản nhưng hiệu quả</span>
+<span class="c-good">nn.CrossEntropyLoss(weight=class_weights, label_smoothing=<span class="c-num">0.05</span>)</span></pre></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ISSUE 5 -->
+    <div class="issue" id="i5">
+      <div class="issue-head">
+        <div class="checkbox" onclick="toggle('i5')">
+          <svg class="checkbox-inner" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#0d0f14" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="issue-meta">
+          <div class="issue-top">
+            <span class="badge badge-medium">Medium #5</span>
+            <span class="file-tag">models.py</span>
+            <span class="file-tag">config.py</span>
+          </div>
+          <div class="issue-title">ACRONYM_NUM_LABELS hardcode trong config — fallback sai khi data thay đổi</div>
+          <div class="issue-desc">Số labels thực tế build dynamically từ data (~280), nhưng fallback dùng constant cứng có thể không khớp</div>
+        </div>
+        <button class="toggle-btn" onclick="expand('i5')">▾</button>
+      </div>
+      <div class="issue-body">
+        <div class="impact-box yellow">
+          <div class="impact-title">⚡ Impact</div>
+          Nếu retrain với data mới (thêm samples → thêm expansion labels), ACRONYM_NUM_LABELS cũ sẽ sai. AcronymResolver fallback load base model với số class sai → silent bug tại inference.
+        </div>
+        <div class="code-block">
+          <div class="code-head"><span class="code-lang">Python</span><span class="code-label">Fix — models.py · AcronymResolver.load_model()</span></div>
+          <div class="code-content"><pre><span class="c-kw">def</span> <span class="c-fn">load_model</span>(self):
+    mapping_path = self.model_dir / <span class="c-str">"expansion_mapping.json"</span>
+    
+    <span class="c-cmt"># Load expansion mapping TRƯỚC để biết num_labels thực tế</span>
+<span class="c-good">    num_labels = ACRONYM_NUM_LABELS  <span class="c-cmt"># default</span>
+    <span class="c-kw">if</span> mapping_path.exists():
+        <span class="c-kw">with</span> open(mapping_path) <span class="c-kw">as</span> f:
+            raw = json.load(f)
+        num_labels = len(raw)  <span class="c-cmt"># ✅ đọc từ file, không hardcode</span></span>
+    
+    <span class="c-kw">if not</span> (self.model_dir / <span class="c-str">"config.json"</span>).exists():
+        self.model = AutoModelForSequenceClassification.from_pretrained(
+            ACRONYM_MODEL_NAME,
+<span class="c-good">            num_labels=num_labels,  <span class="c-cmt"># ✅ dùng giá trị đọc từ mapping</span></span>
+            ignore_mismatched_sizes=<span class="c-kw">True</span>,
+        )</pre></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── MINOR ─── -->
+  <div class="section">
+    <div class="section-title">🔵 Minor</div>
+
+    <!-- ISSUE 6 -->
+    <div class="issue" id="i6">
+      <div class="issue-head">
+        <div class="checkbox" onclick="toggle('i6')">
+          <svg class="checkbox-inner" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#0d0f14" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="issue-meta">
+          <div class="issue-top">
+            <span class="badge badge-minor">Minor #6</span>
+            <span class="file-tag">models.py</span>
+          </div>
+          <div class="issue-title">asyncio.get_event_loop() deprecated từ Python 3.10+</div>
+          <div class="issue-desc">BaseNLUModel.async_predict dùng API cũ, sẽ raise DeprecationWarning hoặc RuntimeError trong môi trường async</div>
+        </div>
+        <button class="toggle-btn" onclick="expand('i6')">▾</button>
+      </div>
+      <div class="issue-body">
+        <div class="code-block">
+          <div class="code-head"><span class="code-lang">Python</span><span class="code-label">Fix — models.py · BaseNLUModel</span></div>
+          <div class="code-content"><pre><span class="c-kw">async def</span> <span class="c-fn">async_predict</span>(self, text: str) -> Any:
+<span class="c-bad">    loop = asyncio.get_event_loop()           <span class="c-cmt"># ❌ deprecated Python 3.10+</span></span>
+<span class="c-good">    loop = asyncio.get_running_loop()         <span class="c-cmt"># ✅ đúng khi đang trong coroutine</span></span>
+    <span class="c-kw">return await</span> loop.run_in_executor(<span class="c-kw">None</span>, self.predict, text)</pre></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ISSUE 7 -->
+    <div class="issue" id="i7">
+      <div class="issue-head">
+        <div class="checkbox" onclick="toggle('i7')">
+          <svg class="checkbox-inner" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#0d0f14" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="issue-meta">
+          <div class="issue-top">
+            <span class="badge badge-minor">Minor #7</span>
+            <span class="file-tag">models.py</span>
+          </div>
+          <div class="issue-title">confidence_threshold=0.10 quá thấp sau khi mask constraint</div>
+          <div class="issue-desc">Sau masking chỉ còn 2-7 choices, softmax phân phối 40-80% vào top-1. Threshold 10% hầu như không bao giờ reject prediction nào</div>
+        </div>
+        <button class="toggle-btn" onclick="expand('i7')">▾</button>
+      </div>
+      <div class="issue-body">
+        <div class="code-block">
+          <div class="code-head"><span class="code-lang">Python</span><span class="code-label">Fix — models.py · AcronymResolver</span></div>
+          <div class="code-content"><pre><span class="c-cmt"># Adaptive threshold dựa trên số valid choices</span>
+<span class="c-good"><span class="c-kw">def</span> <span class="c-fn">_get_threshold</span>(self, acronym: str, default: float = <span class="c-num">0.35</span>) -> float:
+    valid_ids = self.acronym_constraint.get(acronym.lower(), [])
+    n = len(valid_ids)
+    <span class="c-kw">if</span> n <= <span class="c-num">2</span>: <span class="c-kw">return</span> <span class="c-num">0.55</span>  <span class="c-cmt"># 2 choices → expect confident</span>
+    <span class="c-kw">if</span> n <= <span class="c-num">4</span>: <span class="c-kw">return</span> <span class="c-num">0.40</span>
+    <span class="c-kw">return</span> <span class="c-num">0.30</span>               <span class="c-cmt"># 5-7 choices → lower bar</span></span>
+
+<span class="c-cmt"># Trong _classify_acronym:</span>
+<span class="c-good">threshold = self._get_threshold(acronym)
+top_prob = probs.max().item()
+<span class="c-kw">if</span> top_prob < threshold:
+    <span class="c-kw">return</span> {<span class="c-str">"expansion"</span>: acronym, <span class="c-str">"confidence"</span>: top_prob, <span class="c-str">"uncertain"</span>: <span class="c-kw">True</span>}</span></pre></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORDER SUMMARY -->
+  <div class="section">
+    <div class="section-title">Thứ tự fix đề xuất</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 24px;">
+      <ul class="plain">
+        <li><strong style="color:var(--red)">#2 Static padding</strong> — fix nhanh nhất, hiệu quả ngay, training nhanh hơn ~3×</li>
+        <li><strong style="color:var(--red)">#1 Constraint trong training</strong> — fix lớn nhất nhưng quan trọng nhất về conceptual integrity</li>
+        <li><strong style="color:var(--yellow)">#5 Hardcode num_labels</strong> — fix 1 dòng, tránh silent bug sau này</li>
+        <li><strong style="color:var(--yellow)">#4 Focal + Smoothing</strong> — ablation study để biết cái nào thực sự giúp</li>
+        <li><strong style="color:var(--yellow)">#3 Unseen expansions</strong> — cần tracking để đánh giá model đúng cách</li>
+        <li><strong style="color:var(--blue)">#6 asyncio</strong> — 1 dòng, fix ngay nếu đang dùng Python 3.10+</li>
+        <li><strong style="color:var(--blue)">#7 Threshold</strong> — tune sau khi model đã ổn định</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const state = { done: new Set(), open: new Set() };
+
+  function toggle(id) {
+    const el = document.getElementById(id);
+    if (state.done.has(id)) {
+      state.done.delete(id);
+      el.classList.remove('done');
+    } else {
+      state.done.add(id);
+      el.classList.add('done');
+      // auto-collapse when marked done
+      state.open.delete(id);
+      el.classList.remove('open');
+    }
+    updateProgress();
+  }
+
+  function expand(id) {
+    const el = document.getElementById(id);
+    if (state.open.has(id)) {
+      state.open.delete(id);
+      el.classList.remove('open');
+    } else {
+      state.open.add(id);
+      el.classList.add('open');
+    }
+    event.stopPropagation();
+  }
+
+  function updateProgress() {
+    const total = 7;
+    const done = state.done.size;
+    const pct = Math.round(done / total * 100);
+
+    document.getElementById('fill').style.width = pct + '%';
+    document.getElementById('pct').textContent = done + ' / ' + total;
+
+    const critical = ['i1','i2'].filter(i => state.done.has(i)).length;
+    const medium   = ['i3','i4','i5'].filter(i => state.done.has(i)).length;
+    const minor    = ['i6','i7'].filter(i => state.done.has(i)).length;
+
+    document.getElementById('cnt-c').textContent = critical + '/2';
+    document.getElementById('cnt-m').textContent = medium + '/3';
+    document.getElementById('cnt-i').textContent = minor + '/2';
+  }
+</script>
+</body>
+</html>
