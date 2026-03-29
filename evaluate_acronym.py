@@ -22,19 +22,25 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 def load_model_and_dict(model_dir: str, device: torch.device):
     """Load trained model, tokenizer, and dictionary."""
-    model_dir = Path(model_dir)
+    model_path = Path(model_dir)
+    is_local = model_path.exists()
 
-    tokenizer = AutoTokenizer.from_pretrained(str(model_dir))
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)
     model = AutoModelForSequenceClassification.from_pretrained(
-        str(model_dir), num_labels=1
+        model_dir, num_labels=1
     )
     model.to(device)
     model.eval()
 
     # Load dictionary
-    dict_path = model_dir / "acronym_dict.json"
-    if not dict_path.exists():
-        raise FileNotFoundError(f"No acronym_dict.json in {model_dir}")
+    if is_local:
+        dict_path = model_path / "acronym_dict.json"
+        if not dict_path.exists():
+            raise FileNotFoundError(f"No acronym_dict.json in {model_dir}")
+    else:
+        from huggingface_hub import hf_hub_download
+        dict_path = hf_hub_download(repo_id=model_dir, filename="acronym_dict.json")
+
     with open(dict_path, "r", encoding="utf-8") as f:
         acronym_dict = json.load(f)
 

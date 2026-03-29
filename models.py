@@ -111,24 +111,36 @@ class AcronymCrossEncoder(BaseNLUModel):
 
     def load_model(self) -> None:
         """Load trained Cross-Encoder model + tokenizer + dictionary."""
-        if not self.model_dir.exists():
-            raise FileNotFoundError(f"Model dir not found: {self.model_dir}")
+        is_local = self.model_dir.exists()
+        model_name_or_path = str(self.model_dir)
 
-        self.tokenizer = AutoTokenizer.from_pretrained(str(self.model_dir))
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
         self.model = AutoModelForSequenceClassification.from_pretrained(
-            str(self.model_dir), num_labels=1
+            model_name_or_path, num_labels=1
         )
         self.model.to(self.device)
         self.model.eval()
 
         # Load dictionary
-        dict_path = self.model_dir / "acronym_dict.json"
-        if dict_path.exists():
+        if is_local:
+            dict_path = self.model_dir / "acronym_dict.json"
+        else:
+            try:
+                from huggingface_hub import hf_hub_download
+                dict_path = hf_hub_download(repo_id=model_name_or_path, filename="acronym_dict.json")
+            except ImportError:
+                print("⚠️ huggingface_hub not installed. Cannot download dictionary.")
+                dict_path = None
+            except Exception as e:
+                print(f"⚠️ Failed to download acronym_dict.json: {e}")
+                dict_path = None
+
+        if dict_path:
             with open(dict_path, "r", encoding="utf-8") as f:
                 self.acronym_dict = json.load(f)
             print(f"✅ AcronymCrossEncoder loaded: {len(self.acronym_dict)} acronyms")
         else:
-            print(f"⚠️ No acronym_dict.json found in {self.model_dir}")
+            print(f"⚠️ No acronym_dict.json found for {model_name_or_path}")
 
         self._is_loaded = True
 
