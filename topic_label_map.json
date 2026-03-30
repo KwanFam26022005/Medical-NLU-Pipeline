@@ -1,0 +1,42 @@
+{
+  "topic2id": {
+    "cardiology": 0,
+    "dentistry": 1,
+    "dermatology": 2,
+    "endocrinology": 3,
+    "ent": 4,
+    "gastroenterology": 5,
+    "internal_medicine": 6,
+    "neurology": 7,
+    "nutrition": 8,
+    "obstetrics_gynecology": 9,
+    "oncology": 10,
+    "ophthalmology": 11,
+    "orthopedics": 12,
+    "pediatrics": 13,
+    "reproductive_endocrinology": 14,
+    "rheumatology": 15,
+    "traditional_medicine": 16,
+    "urology": 17
+  },
+  "id2topic": {
+    "0": "cardiology",
+    "1": "dentistry",
+    "2": "dermatology",
+    "3": "endocrinology",
+    "4": "ent",
+    "5": "gastroenterology",
+    "6": "internal_medicine",
+    "7": "neurology",
+    "8": "nutrition",
+    "9": "obstetrics_gynecology",
+    "10": "oncology",
+    "11": "ophthalmology",
+    "12": "orthopedics",
+    "13": "pediatrics",
+    "14": "reproductive_endocrinology",
+    "15": "rheumatology",
+    "16": "traditional_medicine",
+    "17": "urology"
+  }
+}

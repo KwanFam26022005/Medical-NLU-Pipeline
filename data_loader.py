@@ -1,6 +1,6 @@
 """
 data_loader.py - Module tải và tiền xử lý dữ liệu cho tất cả các bài toán.
-Hỗ trợ: acrDrAid (WSD), ViMQ NER (BIO), ViMQ Intent, Topic CSV (pending).
+Hỗ trợ: acrDrAid (WSD), ViMQ NER (BIO), ViMQ Intent, Topic JSON (preprocess_topic).
 """
 
 import json
@@ -18,13 +18,16 @@ from config import (
     ACRONYM_MODEL_NAME,
     DATA_DIR,
     INTENT_LABEL2ID,
+    INTENT_LABELS,
     INTENT_NUM_LABELS,
     INTENT_MODEL_NAME,
     NER_LABEL2ID,
     NER_MODEL_NAME,
-    TOPIC_CSV_FILES,
-    TOPIC_DATASET_READY,
+    TOPIC_LABEL_MAP_JSON,
     TOPIC_MODEL_NAME,
+    TOPIC_TEST_JSON,
+    TOPIC_TRAIN_JSON,
+    TOPIC_VAL_JSON,
 )
 
 
@@ -477,95 +480,148 @@ class NERDataLoader:
 
 
 # ============================================================
-# 📍 TRẠM 2B: TOPIC DATA LOADER (CSV - PENDING)
+# 📍 TRẠM 2B: TOPIC DATA LOADER (JSON — preprocess_topic.py)
 # ============================================================
 
 class TopicDataLoader:
     """
-    Tải dataset Topic Classification từ nhiều file CSV.
-    
-    ⚠️ TRẠNG THÁI: ĐANG CHỜ HOÀN THIỆN DATASET.
-    Các file CSV (train_ml.csv, alobacsi_processed.csv, tamanh.csv) chưa sẵn sàng.
-    Class này chỉ là KHUNG CODE (template), sẽ hoàn thiện khi data ready.
+    Tải Topic Classification từ JSON đã tiền xử lý:
+      data/topic_train.json, topic_val.json, topic_test.json, topic_label_map.json
+
+    Padding động: tokenize không pad (truncation + max_length); DataCollatorWithPadding khi train.
     """
 
     def __init__(
         self,
         tokenizer_name: str = TOPIC_MODEL_NAME,
         max_length: int = 256,
-        text_column: str = "text",
-        label_column: str = "khoa",
+        train_path: Optional[Path] = None,
+        val_path: Optional[Path] = None,
+        test_path: Optional[Path] = None,
+        label_map_path: Optional[Path] = None,
     ) -> None:
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
         self.max_length = max_length
-        self.text_column = text_column
-        self.label_column = label_column
+        self.train_path = Path(train_path or TOPIC_TRAIN_JSON)
+        self.val_path = Path(val_path or TOPIC_VAL_JSON)
+        self.test_path = Path(test_path or TOPIC_TEST_JSON)
+        self.label_map_path = Path(label_map_path or TOPIC_LABEL_MAP_JSON)
         self.label2id: Dict[str, int] = {}
         self.id2label: Dict[int, str] = {}
 
-    def check_data_ready(self) -> bool:
-        """Kiểm tra xem tất cả file CSV đã có chưa."""
-        if not TOPIC_DATASET_READY:
-            print("⚠️  [TopicDataLoader] Flag TOPIC_DATASET_READY = False.")
-            print("    Dataset Topic chưa sẵn sàng. Đang chờ hoàn thiện...")
-            return False
+    def _load_label_map(self) -> None:
+        if not self.label_map_path.exists():
+            raise FileNotFoundError(f"Label map not found: {self.label_map_path}")
+        with open(self.label_map_path, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+        self.label2id = {str(k): int(v) for k, v in raw["topic2id"].items()}
+        id2topic = raw["id2topic"]
+        self.id2label = {int(k): str(v) for k, v in id2topic.items()}
+        print(
+            f"[TopicDataLoader] Loaded {len(self.label2id)} classes from {self.label_map_path.name}"
+        )
 
-        missing = [f for f in TOPIC_CSV_FILES if not f.exists()]
-        if missing:
-            print(f"⚠️  [TopicDataLoader] Thiếu file: {[str(f) for f in missing]}")
-            return False
+    def _load_split_json(self, path: Path) -> List[Dict[str, Any]]:
+        if not path.exists():
+            raise FileNotFoundError(f"Split file not found: {path}")
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, list):
+            raise ValueError(f"Expected JSON list in {path}")
+        return data
 
-        return True
+    def _compute_class_weights(self, train_labels: List[int]) -> torch.Tensor:
+        """
+        w_c = N / (C * N_c) — bù imbalance (train only).
+        Nếu N_c == 0 thì dùng clamp tối thiểu 1 để tránh chia cho 0.
+        """
+        num_classes = len(self.label2id)
+        counts = torch.zeros(num_classes, dtype=torch.float32)
+        for lid in train_labels:
+            if 0 <= lid < num_classes:
+                counts[lid] += 1.0
+        n_total = counts.sum()
+        if n_total <= 0:
+            raise ValueError("Train set has no labels.")
+        c = float(num_classes)
+        safe_nc = torch.clamp(counts, min=1.0)
+        weights = n_total / (c * safe_nc)
+        print("[TopicDataLoader] Class weights (w_c = N / (C * N_c)), train counts:")
+        for i in range(num_classes):
+            name = self.id2label.get(i, str(i))
+            print(f"  {name}: N_c={int(counts[i].item())}  w={weights[i].item():.4f}")
+        return weights
 
-    def load_and_merge_csv(self) -> pd.DataFrame:
-        """Gộp nhiều file CSV thành 1 DataFrame thống nhất."""
-        if not self.check_data_ready():
-            raise RuntimeError("Dataset chưa sẵn sàng! Không thể load.")
-
-        dfs: List[pd.DataFrame] = []
-        for csv_path in TOPIC_CSV_FILES:
-            df = pd.read_csv(csv_path)
-            # Đảm bảo có đủ cột cần thiết
-            if self.text_column in df.columns and self.label_column in df.columns:
-                dfs.append(df[[self.text_column, self.label_column]])
-            else:
-                print(f"⚠️  Bỏ qua {csv_path.name}: thiếu cột '{self.text_column}' hoặc '{self.label_column}'")
-
-        merged = pd.concat(dfs, ignore_index=True).dropna()
-        print(f"[TopicDataLoader] Đã gộp {len(merged)} samples từ {len(dfs)} files.")
-        return merged
-
-    def build_label_mapping(self, df: pd.DataFrame) -> None:
-        """Xây dựng label mapping từ DataFrame."""
-        unique_labels = sorted(df[self.label_column].unique())
-        self.label2id = {label: idx for idx, label in enumerate(unique_labels)}
-        self.id2label = {idx: label for label, idx in self.label2id.items()}
-        print(f"[TopicDataLoader] {len(self.label2id)} topic labels: {list(self.label2id.keys())[:10]}...")
-
-    def prepare_datasets(self, test_split: float = 0.15) -> DatasetDict:
-        """Pipeline hoàn chỉnh: merge CSV -> build mapping -> tokenize -> split."""
-        df = self.load_and_merge_csv()
-        self.build_label_mapping(df)
-
-        texts = df[self.text_column].tolist()
-        labels = [self.label2id[l] for l in df[self.label_column].tolist()]
+    def tokenize_and_encode(self, records: List[Dict[str, Any]]) -> Dataset:
+        """Truncation only — không max_length padding (collator sẽ pad theo batch)."""
+        texts = [r["text"] for r in records]
+        labels = [int(r["label"]) for r in records]
 
         encodings = self.tokenizer(
             texts,
             max_length=self.max_length,
-            padding="max_length",
             truncation=True,
         )
 
-        dataset = Dataset.from_dict({
+        return Dataset.from_dict({
             "input_ids": encodings["input_ids"],
             "attention_mask": encodings["attention_mask"],
             "labels": labels,
         })
-        dataset.set_format("torch")
 
-        split = dataset.train_test_split(test_size=test_split, seed=42)
-        return DatasetDict({"train": split["train"], "validation": split["test"]})
+    def prepare_datasets(
+        self,
+        train_path: Optional[Path] = None,
+        val_path: Optional[Path] = None,
+        test_path: Optional[Path] = None,
+        label_map_path: Optional[Path] = None,
+    ) -> Tuple[DatasetDict, torch.Tensor]:
+        """
+        Đọc train/val/test + map, tokenize, tính class weights trên train.
+
+        Returns:
+            (DatasetDict với keys train, validation, test, class_weights tensor [C])
+        """
+        tp = Path(train_path or self.train_path)
+        vp = Path(val_path or self.val_path)
+        sp = Path(test_path or self.test_path)
+        mp = Path(label_map_path or self.label_map_path)
+        self.train_path, self.val_path, self.test_path, self.label_map_path = tp, vp, sp, mp
+
+        self._load_label_map()
+        train_records = self._load_split_json(tp)
+        val_records = self._load_split_json(vp)
+        test_records = self._load_split_json(sp)
+
+        train_labels = [int(r["label"]) for r in train_records]
+        class_weights = self._compute_class_weights(train_labels)
+
+        datasets = DatasetDict({
+            "train": self.tokenize_and_encode(train_records),
+            "validation": self.tokenize_and_encode(val_records),
+            "test": self.tokenize_and_encode(test_records),
+        })
+
+        print(
+            f"[TopicDataLoader] Train={len(datasets['train'])}, "
+            f"Val={len(datasets['validation'])}, Test={len(datasets['test'])}"
+        )
+        return datasets, class_weights
+
+    def save_label_mapping(self, output_path: Path) -> None:
+        """Lưu label2id / id2label cùng thư mục model (JSON)."""
+        output_path = Path(output_path)
+        output_path.mkdir(parents=True, exist_ok=True)
+        out_file = output_path / "topic_label_mapping.json"
+        id2label_str = {str(i): lab for i, lab in self.id2label.items()}
+        with open(out_file, "w", encoding="utf-8") as f:
+            json.dump(
+                {"label2id": self.label2id, "id2label": id2label_str},
+                f,
+                ensure_ascii=False,
+                indent=2,
+            )
+        print(f"  → Saved topic label mapping to {out_file}")
 
 
 # ============================================================
