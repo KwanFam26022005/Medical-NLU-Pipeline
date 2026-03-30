@@ -58,9 +58,11 @@ TOPIC_CSV_FILES = [
     DATA_DIR / "alobacsi_processed.csv",
     DATA_DIR / "ml_training_data_tamanh.csv",
 ]
-# ✅ JSON đã xử lý sẵn - TopicDataLoader sẽ đọc trực tiếp 2 file này
+# ✅ JSON đã xử lý sẵn (preprocess_topic.py) — TopicDataLoader đọc train/val/test + label map
 TOPIC_TRAIN_JSON = DATA_DIR / "topic_train.json"
-TOPIC_VAL_JSON   = DATA_DIR / "topic_val.json"
+TOPIC_VAL_JSON = DATA_DIR / "topic_val.json"
+TOPIC_TEST_JSON = DATA_DIR / "topic_test.json"
+TOPIC_LABEL_MAP_JSON = DATA_DIR / "topic_label_map.json"
 
 
 # ============================================================
