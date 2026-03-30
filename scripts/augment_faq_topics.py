@@ -39,6 +39,20 @@ TARGET_CLASSES = [
 ]
 TARGET_SET = frozenset(TARGET_CLASSES)
 
+def normalize_topic_name(topic: str) -> str:
+    """
+    Normalize topic names so that model config labels
+    (e.g. 'Internal Medicine', 'internal-medicine') match our TARGET_CLASSES ('internal_medicine').
+    """
+    if not topic:
+        return ""
+    t = topic.strip().lower()
+    # Replace common separators with underscore
+    t = t.replace("-", "_").replace(" ", "_")
+    # Collapse double underscores
+    t = re.sub(r"_+", "_", t)
+    return t
+
 # Cụm rác cần xóa (ưu tiên chuỗi dài trước)
 _BOILERPLATE_PHRASES = [
     "Câu hỏi khách hàng ẩn danh",
@@ -132,7 +146,8 @@ def predict_batches(
             cf = float(conf[j].item())
             pred_ids.append(pid)
             confidences.append(cf)
-            pred_topics.append(id2label.get(pid, f"topic_{pid}"))
+            raw_topic = id2label.get(pid, f"topic_{pid}")
+            pred_topics.append(normalize_topic_name(raw_topic))
     return pred_ids, confidences, pred_topics
 
 
@@ -207,16 +222,37 @@ def main() -> None:
         max_length=args.max_length,
     )
 
+    # Debug: hiểu vì sao Silver = 0
+    if confs:
+        max_conf = max(confs)
+        n_conf = sum(1 for c in confs if c >= args.min_confidence)
+        print(
+            f"[Debug] Max confidence={max_conf:.6f}, "
+            f"#(confidence>={args.min_confidence})={n_conf}/{len(confs)}"
+        )
+    counts_all_topics = Counter(topics)
+    if counts_all_topics:
+        top10 = counts_all_topics.most_common(10)
+        print("[Debug] Top-10 predicted topics (all confidences):")
+        for t, n in top10:
+            print(f"  {t:26s} {n:6d}")
+
     silver: List[Dict[str, Any]] = []
     silver_seq = 0
+    n_pass_conf = 0
+    n_pass_target = 0
+    n_pass_map = 0
     for text, _pid, conf, top in zip(cleaned, pred_ids, confs, topics):
         if conf < args.min_confidence:
             continue
+        n_pass_conf += 1
         if top not in TARGET_SET:
             continue
+        n_pass_target += 1
         if top not in topic2id:
             print(f"  ⚠️ Bỏ qua: topic '{top}' không có trong topic_label_map.json")
             continue
+        n_pass_map += 1
         label_id = topic2id[top]
         silver.append(
             {
@@ -229,6 +265,10 @@ def main() -> None:
         )
         silver_seq += 1
 
+    print(
+        f"[Debug] Filter breakdown: "
+        f"pass_conf={n_pass_conf}, pass_target={n_pass_target}, pass_map={n_pass_map}"
+    )
     print(f"[Bước 2] Silver sau lọc (conf>={args.min_confidence} & target class): {len(silver)}")
 
     # Thống kê theo khoa hiếm (target)
