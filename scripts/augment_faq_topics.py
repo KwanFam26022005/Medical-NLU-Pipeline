@@ -112,6 +112,12 @@ def load_topic2id_from_map(map_path: Path) -> Dict[str, int]:
         data = json.load(f)
     return {str(k): int(v) for k, v in data["topic2id"].items()}
 
+def load_id2topic_from_map(map_path: Path) -> Dict[int, str]:
+    with open(map_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    # topic_label_map.json: {"id2topic": {"0": "cardiology", ...}}
+    return {int(k): str(v) for k, v in data["id2topic"].items()}
+
 
 @torch.inference_mode()
 def predict_batches(
@@ -121,9 +127,9 @@ def predict_batches(
     device: torch.device,
     batch_size: int,
     max_length: int,
+    id2topic_from_map: Dict[int, str],
 ) -> Tuple[List[int], List[float], List[str]]:
     """Trả về (pred_ids, confidences, pred_topics) theo cùng thứ tự texts."""
-    id2label = build_id2label_from_model(model)
     pred_ids: List[int] = []
     confidences: List[float] = []
     pred_topics: List[str] = []
@@ -146,7 +152,7 @@ def predict_batches(
             cf = float(conf[j].item())
             pred_ids.append(pid)
             confidences.append(cf)
-            raw_topic = id2label.get(pid, f"topic_{pid}")
+            raw_topic = id2topic_from_map.get(pid, f"topic_{pid}")
             pred_topics.append(normalize_topic_name(raw_topic))
     return pred_ids, confidences, pred_topics
 
@@ -212,6 +218,7 @@ def main() -> None:
     model.eval()
 
     topic2id = load_topic2id_from_map(args.topic_label_map)
+    id2topic_from_map = load_id2topic_from_map(args.topic_label_map)
 
     pred_ids, confs, topics = predict_batches(
         cleaned,
@@ -220,6 +227,7 @@ def main() -> None:
         device,
         batch_size=args.batch_size,
         max_length=args.max_length,
+        id2topic_from_map=id2topic_from_map,
     )
 
     # Debug: hiểu vì sao Silver = 0
