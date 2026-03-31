@@ -1,8 +1,8 @@
 # 📐 kiến trúc chi tiết: Medical Intent — phân loại đa ý định y tế (trạm 2C)
 
-> **module:** trạm 2C — medical intent classification (multi-label, multi-class)
-> **backbone:** `demdecuong/vihealthbert-base-syllable` (roberta-base, ~135M tham số)
-> **chiến lược loss:** BCEWithLogitsLoss + Adaptive Pos-Weight
+> **module:** trạm 2C — medical intent classification (multi-label, multi-class)  
+> **backbone:** `demdecuong/vihealthbert-base-syllable` (roberta-base, ~135M tham số)  
+> **chiến lược loss:** BCEWithLogitsLoss + Adaptive Pos-Weight  
 > **không gian nhãn:** 4 intents (Diagnosis, Treatment, Severity, Cause)
 
 ---
