@@ -29,7 +29,7 @@ trong data y tế, nhãn `Diagnosis` luôn áp đảo, trong khi `Cause` hay `Se
 trạm 2C tính toán `pos_weight` cho từng class $c$:
 
 $$
-\text{pos\_weight}_c = \frac{N - N_c}{N_c}
+\operatorname{posweight}_c = \frac{N - N_c}{N_c}
 $$
 
 hệ số này sẽ nhân vào loss của các mẫu positive (nhãn 1). lớp càng hiếm thì `pos_weight` càng lớn, buộc mô hình phải "trân trọng" những lần bắt trúng nhãn thiểu số.
