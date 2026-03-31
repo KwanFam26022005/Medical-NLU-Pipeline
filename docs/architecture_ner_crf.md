@@ -1,9 +1,9 @@
 # 📐 kiến trúc chi tiết: Medical NER — trích xuất thực thể y tế (trạm 2A)
 
-> **module:** trạm 2A — medical named entity recognition (token classification)
-> **backbone:** `demdecuong/vihealthbert-base-word` (roberta-base, word-level)
-> **tầng bổ trợ (SOTA):** CRF (conditional random fields)
-> **không gian nhãn:** BIO format (SYMPTOM_AND_DISEASE, MEDICAL_PROCEDURE, MEDICINE)
+> **module:** trạm 2A — medical named entity recognition (token classification)  
+> **backbone:** `demdecuong/vihealthbert-base-word` (roberta-base, word-level)  
+> **tầng bổ trợ (SOTA):** CRF (conditional random fields)  
+> **không gian nhãn:** BIO format (SYMPTOM_AND_DISEASE, MEDICAL_PROCEDURE, MEDICINE)  
 > **mục tiêu:** giải quyết triệt để vấn đề span-noise và luật chuyển nhãn trong văn bản y tế.
 
 ---
