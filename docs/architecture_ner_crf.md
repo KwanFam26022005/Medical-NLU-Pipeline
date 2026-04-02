@@ -76,11 +76,14 @@ $$ P(\mathbf{y} | \mathbf{x}) = \frac{1}{Z(\mathbf{x})} \exp \left( \sum_{i=1}^{
 
 ## 5. Quá trình Huấn luyện & Đánh giá (Training & Evaluation)
 
-### 5.1 Hội tụ & Dừng sớm (Early Stopping)
-> *[CHÈN BIỂU ĐỒ 3: `ner_training_curve.png` vào đây]*
+### 5.1 Chiến lược Hội tụ & Dừng sớm (Early Stopping)
+Quá trình huấn luyện được thiết lập cơ chế giám sát chặt chẽ thông qua `EarlyStoppingCallback(patience=3)` nhằm tự động ngắt tiến trình khi phát hiện dấu hiệu học vẹt (Overfitting). 
 
-**Nhận xét:** Mô hình được thiết lập cơ chế giám sát `EarlyStoppingCallback(patience=3)`. Biểu đồ đường (Line chart) minh họa rõ ràng hiện tượng mô hình chạm đỉnh hội tụ ở Epoch 3 (F1-score ~0.79). Khi cố gắng học tiếp đến Epoch 6, Training Loss tiếp tục giảm nhưng Validation Loss bắt đầu tăng vọt. Cơ chế Dừng sớm đã phát huy tác dụng tuyệt đối: ngắt tiến trình và khôi phục trọng số tối ưu nhất để chống Overfitting.
+Thực tế huấn luyện (Training Logs) cho thấy:
+- Mô hình đạt đỉnh hội tụ (Best Checkpoint) rất nhanh với F1-score xấp xỉ **0.80**.
+- Ở các epoch tiếp theo, mặc dù `Training Loss` tiếp tục giảm (mô hình cố gắng học thuộc lòng dữ liệu Train), nhưng `Validation Loss` lại có dấu hiệu tăng ngược trở lại. Ngay lập tức, cơ chế Dừng sớm đã tự động cắt ngang tiến trình, loại bỏ các epoch bị nhiễu và khôi phục lại bộ trọng số (weights) tối ưu nhất. Điều này đảm bảo mô hình giữ được khả năng tổng quát hóa (generalization) cao nhất khi đối mặt với dữ liệu thực tế.
 
-### 5.2 Metrics Đánh giá
-Sử dụng thư viện `seqeval` chuẩn quốc tế:
-- **Strict F1-score:** Mô hình chỉ được cộng điểm khi bắt trúng 100% cả danh tính thực thể lẫn đường viền ranh giới (B- và I- match tuyệt đối).
+### 5.2 Metrics Đánh giá chuyên sâu
+Hệ thống sử dụng thư viện `seqeval` chuẩn quốc tế dành riêng cho bài toán Sequence Labeling để đánh giá:
+- **Strict F1-score (~80%):** Đây là thước đo vô cùng khắt khe. Một thực thể chỉ được tính là dự đoán đúng (Exact Match) khi và chỉ khi nó khớp 100% cả về danh tính (Bệnh/Thuốc) lẫn ranh giới từ (`B-` và `I-`). Việc đạt được mức F1 này trên dữ liệu y tế phức tạp minh chứng cho sức mạnh bộ lọc của CRF.
+- **Precision & Recall:** Thể hiện sự cân bằng tuyệt vời giữa việc "không bỏ sót thực thể y tế quan trọng" (Recall cao) và "không dự đoán bừa bãi gây nhiễu context" (Precision cao).
