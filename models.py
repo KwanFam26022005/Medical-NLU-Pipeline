@@ -398,94 +398,57 @@ class TopicClassifier(BaseNLUModel):
 # 📍 TRẠM 2C: INTENT CLASSIFIER (Multi-label)
 # ============================================================
 
-class IntentClassifier(BaseNLUModel):
-    """
-    Phân loại ý định câu hỏi y tế: Diagnosis, Treatment, Severity, Cause.
-    
-    ⚠️ MULTI-LABEL: Một câu có thể có nhiều intent đồng thời.
-    Sử dụng sigmoid threshold thay vì argmax.
-    """
+import os
+import json
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from config import INTENT_MODEL_DIR, INTENT_MODEL_NAME, INTENT_ID2LABEL
 
-    def __init__(
-        self,
-        model_dir: Path = INTENT_MODEL_DIR,
-        threshold: float = 0.5,
-        device: Optional[str] = None,
-    ) -> None:
-        super().__init__(model_dir, device)
-        self.threshold = threshold
-        self.id2label = INTENT_ID2LABEL
-
-    def load_model(self) -> None:
-        """Load fine-tuned intent model hoặc base model."""
-        if self.model_dir.exists() and (self.model_dir / "config.json").exists():
-            print(f"[IntentClassifier] Loading fine-tuned model từ {self.model_dir}")
-            self.tokenizer = AutoTokenizer.from_pretrained(str(self.model_dir))
-            self.model = AutoModelForSequenceClassification.from_pretrained(
-                str(self.model_dir)
-            )
-        else:
-            print(f"[IntentClassifier] ⚠️ Không tìm thấy fine-tuned model.")
-            print(f"  -> Fallback: Load base model {INTENT_MODEL_NAME}")
-            self.tokenizer = AutoTokenizer.from_pretrained(INTENT_MODEL_NAME)
-            self.model = AutoModelForSequenceClassification.from_pretrained(
-                INTENT_MODEL_NAME,
-                num_labels=INTENT_NUM_LABELS,
-                problem_type="multi_label_classification",
-                ignore_mismatched_sizes=True,
-            )
-
+class IntentClassifier:
+    def __init__(self, model_dir=INTENT_MODEL_DIR):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(f"[IntentClassifier] Đang load model từ: {model_dir}")
+        self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_dir)
         self.model.to(self.device)
         self.model.eval()
-        self._is_loaded = True
-
-    @torch.no_grad()
-    def predict(self, text: str) -> Dict[str, Any]:
-        """
-        Dự đoán intent(s) của câu hỏi y tế.
+        self.id2label = INTENT_ID2LABEL
         
-        Logic Multi-label:
-        - Dùng sigmoid (không phải softmax) vì các intent KHÔNG loại trừ nhau.
-        - Áp dụng threshold: intent nào có prob >= threshold thì được chọn.
-        - VD: "Đau bụng có phải viêm ruột thừa không, cần mổ không?"
-          -> Diagnosis (0.85) ✓, Treatment (0.72) ✓, Severity (0.30) ✗
-        
-        Returns: {"intents": [...], "scores": {...}, "primary_intent": str}
-        """
-        self.ensure_loaded()
+        # Load Dynamic Thresholds
+        threshold_path = os.path.join(model_dir, "thresholds.json")
+        if os.path.exists(threshold_path):
+            with open(threshold_path, "r", encoding="utf-8") as f:
+                self.thresholds = json.load(f)
+            print("[IntentClassifier] Đã nạp Dynamic Thresholds.")
+        else:
+            self.thresholds = {label: 0.5 for label in self.id2label.values()}
+            print("[IntentClassifier] Không tìm thấy thresholds.json, dùng mặc định 0.5.")
 
+    def predict(self, text: str):
         inputs = self.tokenizer(
-            text,
-            max_length=MAX_INPUT_LENGTH,
-            padding="max_length",
-            truncation=True,
-            return_tensors="pt",
+            text, 
+            return_tensors="pt", 
+            truncation=True, 
+            max_length=256
         ).to(self.device)
-
-        outputs = self.model(**inputs)
-        # Sigmoid cho multi-label (KHÔNG DÙNG softmax)
-        probs = torch.sigmoid(outputs.logits)[0]
-
-        # Lọc intent vượt threshold
-        predicted_intents: List[str] = []
-        scores: Dict[str, float] = {}
-
-        for idx, prob in enumerate(probs):
-            label = self.id2label.get(idx, f"intent_{idx}")
-            score = round(prob.item(), 4)
-            scores[label] = score
-            if score >= self.threshold:
-                predicted_intents.append(label)
-
-        # Intent chính = intent có score cao nhất
-        primary_intent = max(scores, key=scores.get) if scores else "Unknown"
-
-        # Nếu không có intent nào vượt threshold -> lấy intent cao nhất
-        if not predicted_intents:
-            predicted_intents = [primary_intent]
-
-        return {
-            "intents": predicted_intents,
-            "scores": scores,
-            "primary_intent": primary_intent,
-        }
+        
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+            
+        logits = outputs.logits[0]
+        probs = torch.sigmoid(logits).cpu().numpy()
+        
+        results = []
+        for i, prob in enumerate(probs):
+            label_name = self.id2label[i]
+            # Áp dụng ngưỡng riêng cho từng class
+            t = self.thresholds.get(label_name, 0.5)
+            if prob >= t:
+                results.append({"intent": label_name, "score": float(prob)})
+                
+        # Fallback: Nếu không qua ngưỡng nào, trả về intent có prob cao nhất
+        if not results:
+            best_idx = np.argmax(probs)
+            results.append({"intent": self.id2label[best_idx], "score": float(probs[best_idx])})
+            
+        return results
