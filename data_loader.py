@@ -597,6 +597,7 @@ class TopicDataLoader:
 class IntentDataLoader:
     """
     Tải dataset ViMQ Intent cho bài toán Multi-label Classification.
+    ĐÃ SỬA LỖI: Tự động chuẩn hóa (normalize) tên nhãn từ ViMQ sang Config.
     """
 
     def __init__(
@@ -604,13 +605,15 @@ class IntentDataLoader:
         tokenizer_name: str = INTENT_MODEL_NAME,
         max_length: int = 256,
     ) -> None:
+        from config import INTENT_MODEL_NAME, INTENT_LABEL2ID, INTENT_LABELS, INTENT_NUM_LABELS
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
         self.max_length = max_length
         self.label2id = INTENT_LABEL2ID
         self.id2label = {v: k for k, v in INTENT_LABEL2ID.items()}
+        self.intent_labels = INTENT_LABELS
+        self.num_labels = INTENT_NUM_LABELS
 
     def load_raw_data(self, file_path: Path) -> List[Dict[str, Any]]:
-        """Hỗ trợ tự động nhận diện các key: labels, intents, hoặc intent."""
         file_path = Path(file_path)
         samples: List[Dict[str, Any]] = []
 
@@ -624,21 +627,36 @@ class IntentDataLoader:
         print(f"[IntentDataLoader] Đã load {len(samples)} samples từ {file_path.name}")
         return samples
 
+    def _normalize_intents(self, intents: List[str]) -> List[str]:
+        """HÀM MỚI: Dịch nhãn thô của ViMQ sang nhãn chuẩn của hệ thống"""
+        normalized = []
+        for intent in intents:
+            intent_lower = intent.lower()
+            if "diagnosis" in intent_lower: normalized.append("Diagnosis")
+            elif "severity" in intent_lower: normalized.append("Severity")
+            elif "treatment" in intent_lower: normalized.append("Treatment")
+            elif "cause" in intent_lower: normalized.append("Cause")
+            else: normalized.append(intent)
+        return normalized
+
     def _encode_multi_label(self, intents: List[str]) -> List[float]:
-        label_vector = [0.0] * INTENT_NUM_LABELS
+        label_vector = [0.0] * self.num_labels
         for intent in intents:
             if intent in self.label2id:
                 label_vector[self.label2id[intent]] = 1.0
         return label_vector
 
     def compute_class_weights(self, samples: List[Dict[str, Any]]) -> torch.Tensor:
-        positive_counts = [0] * INTENT_NUM_LABELS
+        positive_counts = [0] * self.num_labels
         total = len(samples)
 
         for sample in samples:
-            # Lấy key linh hoạt
             intents = sample.get("labels", sample.get("intents", sample.get("intent", [])))
             if isinstance(intents, str): intents = [intents]
+            
+            # CHUẨN HÓA NHÃN TRƯỚC KHI ĐẾM
+            intents = self._normalize_intents(intents)
+            
             for intent in intents:
                 if intent in self.label2id:
                     positive_counts[self.label2id[intent]] += 1
@@ -650,8 +668,8 @@ class IntentDataLoader:
             else:
                 pos_weights.append(1.0)
 
-        print(f"[IntentDataLoader] Phân bố Intent labels:")
-        for i, label in enumerate(INTENT_LABELS):
+        print(f"[IntentDataLoader] Phân bố Intent labels sau khi chuẩn hóa:")
+        for i, label in enumerate(self.intent_labels):
             print(f"  - {label}: {positive_counts[i]}/{total} (pos_weight = {pos_weights[i]:.2f})")
 
         return torch.tensor(pos_weights, dtype=torch.float32)
@@ -664,6 +682,9 @@ class IntentDataLoader:
             texts.append(sample["text"])
             intents = sample.get("labels", sample.get("intents", sample.get("intent", [])))
             if isinstance(intents, str): intents = [intents]
+            
+            # CHUẨN HÓA NHÃN TRƯỚC KHI ĐƯA VÀO MODEL
+            intents = self._normalize_intents(intents)
             labels.append(self._encode_multi_label(intents))
 
         encodings = self.tokenizer(texts, max_length=self.max_length, padding="max_length", truncation=True)
