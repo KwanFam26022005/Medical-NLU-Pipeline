@@ -31,7 +31,11 @@ class TestIntentClassifierUnit:
     def test_predict_returns_list_of_dicts(self, mock_intent_classifier, sample_clean_text):
         """Mỗi phần tử PHẢI là Dict với keys 'intent' và 'score'."""
         result = mock_intent_classifier.predict(sample_clean_text)
+        print(f"\n  📥 Input: '{sample_clean_text}'")
+        print(f"  📤 Intent raw output ({len(result)} intents):")
         for item in result:
+            bar = "█" * int(item['score'] * 20)
+            print(f"    🎯 {item['intent']:12s} score={item['score']:.2f} {bar}")
             assert isinstance(item, dict), f"Expected dict, got {type(item)}"
             assert "intent" in item, f"Missing key 'intent' in {item}"
             assert "score" in item, f"Missing key 'score' in {item}"
@@ -90,6 +94,14 @@ class TestIntentNormalizationAdapter:
     def test_normalize_correct_primary_intent(self, sample_intent_raw_output):
         """primary_intent = intent có score cao nhất."""
         result = normalize_intent_output(sample_intent_raw_output)
+        print(f"\n  📥 Raw Intent input:")
+        for item in sample_intent_raw_output:
+            print(f"    • {item}")
+        print(f"  ⬇️  Normalization...")
+        print(f"  📤 Normalized output:")
+        print(f"    🎯 primary_intent: '{result['primary_intent']}'")
+        print(f"    📊 intents:        {result['intents']}")
+        print(f"    📊 scores:         {result['scores']}")
         assert result["primary_intent"] == "Treatment", (
             f"Expected Treatment (0.87), got {result['primary_intent']}"
         )

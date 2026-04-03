@@ -27,13 +27,19 @@ class TestAcronymCrossEncoderUnit:
 
     def test_predict_returns_string(self, mock_acronym_resolver):
         """predict() PHẢI trả về str."""
-        result = mock_acronym_resolver.predict("bs ơi e bị đau dd")
+        input_text = "bs ơi e bị đau dd"
+        result = mock_acronym_resolver.predict(input_text)
+        print(f"\n  📥 Input:  '{input_text}'")
+        print(f"  📤 Output: '{result}'")
+        print(f"  📊 Type:   {type(result).__name__}")
         assert isinstance(result, str), f"Expected str, got {type(result)}"
 
     def test_predict_replaces_acronyms(self, mock_acronym_resolver):
         """predict() phải thay thế viết tắt thành dạng đầy đủ."""
-        result = mock_acronym_resolver.predict("bs ơi e bị đau dd")
-        # Mock đã cấu hình trả về clean text
+        input_text = "bs ơi e bị đau dd"
+        result = mock_acronym_resolver.predict(input_text)
+        print(f"\n  📥 Input (có viết tắt):  '{input_text}'")
+        print(f"  📤 Output (đã giải):    '{result}'")
         assert "bác sĩ" in result or "dạ dày" in result or result != ""
 
     def test_predict_no_acronyms_returns_original(self, mock_acronym_resolver):
@@ -45,7 +51,9 @@ class TestAcronymCrossEncoderUnit:
 
     def test_acronym_dict_structure(self, sample_acronym_dict):
         """Dictionary: key = viết tắt (str), value = list expansions (List[str])."""
+        print(f"\n  📖 Acronym Dictionary ({len(sample_acronym_dict)} entries):")
         for acronym, expansions in sample_acronym_dict.items():
+            print(f"    '{acronym}' → {expansions}")
             assert isinstance(acronym, str), f"Key phải là str, got {type(acronym)}"
             assert isinstance(expansions, list), f"Value phải là list, got {type(expansions)}"
             assert len(expansions) >= 1, f"Viết tắt '{acronym}' phải có ít nhất 1 expansion"
@@ -125,6 +133,9 @@ class TestAcronymEdgeCases:
         text_with_special = "bs ơi e bị đau dd quá! Phải làm sao???"
         mock_acronym_resolver.predict.return_value = "bác sĩ ơi em bị đau dạ dày quá! Phải làm sao???"
         result = mock_acronym_resolver.predict(text_with_special)
+        print(f"\n  📥 Input:  '{text_with_special}'")
+        print(f"  📤 Output: '{result}'")
+        print(f"  ✅ Giữ nguyên: '?' = {'?' in result}, '!' = {'!' in result}")
         assert "?" in result, "Dấu hỏi bị mất"
         assert "!" in result, "Dấu chấm than bị mất"
 

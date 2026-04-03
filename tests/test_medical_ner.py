@@ -31,7 +31,11 @@ class TestMedicalNERUnit:
     def test_predict_returns_list_of_dicts(self, mock_medical_ner, sample_clean_text):
         """Mỗi phần tử trong list PHẢI là Dict với keys 'word' và 'label'."""
         result = mock_medical_ner.predict(sample_clean_text)
-        for item in result:
+        print(f"\n  📥 Input text: '{sample_clean_text}'")
+        print(f"  📤 NER raw output ({len(result)} tokens):")
+        for i, item in enumerate(result):
+            label_icon = "🟢" if item["label"] == "O" else "🟡" if item["label"].startswith("B-") else "🔵"
+            print(f"    {label_icon} [{i}] word='{item['word']}' label='{item['label']}'")
             assert isinstance(item, dict), f"Expected dict, got {type(item)}"
             assert "word" in item, f"Missing key 'word' in {item}"
             assert "label" in item, f"Missing key 'label' in {item}"
@@ -108,6 +112,13 @@ class TestBIOAggregationAdapter:
     ):
         """Aggregate BIO → đúng danh sách entity strings."""
         result = aggregate_bio_entities(sample_ner_bio_output)
+        print(f"\n  📥 BIO Input ({len(sample_ner_bio_output)} tokens):")
+        for t in sample_ner_bio_output:
+            if t['label'] != 'O':
+                print(f"    🏷️  word='{t['word']}' label='{t['label']}'")
+        print(f"  ⬇️  Aggregation...")
+        print(f"  📤 Output entities: {result}")
+        print(f"  ✅ Expected:        {sample_ner_aggregated_entities}")
         assert result == sample_ner_aggregated_entities, (
             f"Expected {sample_ner_aggregated_entities}, got {result}"
         )
@@ -125,6 +136,9 @@ class TestBIOAggregationAdapter:
             {"word": "viêm_phổi", "label": "B-SYMPTOM_AND_DISEASE"},
         ]
         result = aggregate_bio_entities(bio_output)
+        print(f"\n  📥 Input:  word='viêm_phổi' (có underscore)")
+        print(f"  📤 Output: {result}")
+        print(f"  ✅ Underscore '_' → space ' '")
         assert result == ["viêm phổi"], f"Underscore phải được thay bằng space, got {result}"
 
     def test_aggregate_multiple_entities(self):
