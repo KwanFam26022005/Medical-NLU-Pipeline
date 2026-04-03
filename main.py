@@ -213,10 +213,29 @@ async def analyze_medical_query(
     # asyncio.gather chạy 2A, 2B, 2C song song
     # ──────────────────────────────────────────────
     async def run_ner() -> List[str]:
-        """2A: Medical NER."""
+        """2A: Medical NER — trả về danh sách entity strings đã aggregate từ BIO."""
         if medical_ner is not None:
             try:
-                return await medical_ner.async_predict(clean_text)
+                raw_ner = await medical_ner.async_predict(clean_text)
+                # Aggregate BIO tokens thành entity strings
+                entities = []
+                current_entity = []
+                for token in raw_ner:
+                    label = token.get("label", "O")
+                    word = token.get("word", "").replace("_", " ")
+                    if label.startswith("B-"):
+                        if current_entity:
+                            entities.append(" ".join(current_entity))
+                        current_entity = [word]
+                    elif label.startswith("I-") and current_entity:
+                        current_entity.append(word)
+                    else:
+                        if current_entity:
+                            entities.append(" ".join(current_entity))
+                            current_entity = []
+                if current_entity:
+                    entities.append(" ".join(current_entity))
+                return entities
             except Exception as e:
                 print(f"⚠️ MedicalNER error: {e}")
         return []
@@ -231,10 +250,20 @@ async def analyze_medical_query(
         return {"topic": "unknown", "confidence": 0.0, "is_reliable": False}
 
     async def run_intent() -> Dict[str, Any]:
-        """2C: Intent Classification."""
+        """2C: Intent Classification — normalize List[Dict] thành Dict chuẩn."""
         if intent_classifier is not None:
             try:
-                return await intent_classifier.async_predict(clean_text)
+                raw_intents = await intent_classifier.async_predict(clean_text)
+                # Normalize: List[Dict] → Dict với primary_intent
+                if raw_intents:
+                    sorted_intents = sorted(raw_intents, key=lambda x: x["score"], reverse=True)
+                    primary = sorted_intents[0]["intent"]
+                    scores = {item["intent"]: round(item["score"], 4) for item in sorted_intents}
+                    return {
+                        "intents": [item["intent"] for item in sorted_intents],
+                        "scores": scores,
+                        "primary_intent": primary,
+                    }
             except Exception as e:
                 print(f"⚠️ IntentClassifier error: {e}")
         return {"intents": [], "scores": {}, "primary_intent": "unknown"}
