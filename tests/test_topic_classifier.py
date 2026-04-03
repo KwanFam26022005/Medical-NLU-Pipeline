@@ -31,6 +31,10 @@ class TestTopicClassifierUnit:
     def test_output_has_required_keys(self, mock_topic_classifier, sample_clean_text):
         """Output PHẢI có đủ 3 keys: topic, confidence, is_reliable."""
         result = mock_topic_classifier.predict(sample_clean_text)
+        print(f"\n  📥 Input: '{sample_clean_text}'")
+        print(f"  📤 Topic output:")
+        for key, val in result.items():
+            print(f"    📌 {key}: {val} ({type(val).__name__})")
         required_keys = {"topic", "confidence", "is_reliable"}
         assert required_keys.issubset(result.keys()), (
             f"Missing keys: {required_keys - result.keys()}"

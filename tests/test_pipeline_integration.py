@@ -161,6 +161,17 @@ class TestPipelineFlow:
             ),
             processing_time_ms=150.0,
         )
+        print(f"\n  {'='*60}")
+        print(f"  🏥 FULL PIPELINE RESPONSE")
+        print(f"  {'='*60}")
+        print(f"  📥 Raw text:   '{response.raw_text}'")
+        print(f"  🧹 Clean text: '{response.clean_text}'")
+        print(f"  \n  📊 NLU Results:")
+        print(f"    🏷️  Entities: {response.nlu_result.entities}")
+        print(f"    🏥 Topic:    {response.nlu_result.topic}")
+        print(f"    🎯 Intent:   {response.nlu_result.intent}")
+        print(f"  \n  ⏱️  Processing: {response.processing_time_ms}ms")
+        print(f"  {'='*60}")
         assert response.raw_text == sample_raw_text
         assert response.clean_text == sample_clean_text
         assert response.nlu_result.entities == ["đau dạ dày", "mổ nội soi"]
