@@ -330,8 +330,7 @@ class NERDataLoader:
     Tải dataset NER ở định dạng CoNLL (BIO tagging).
     Hỗ trợ nhãn: SYMPTOM_AND_DISEASE, MEDICAL_PROCEDURE, MEDICINE.
     
-    ⚠️ QUAN TRỌNG: Dataset ViMQ NER đã được word-segmented sẵn.
-    Khi tokenize bằng WordPiece, cần align lại nhãn cho sub-tokens.
+    ĐÃ CẬP NHẬT: Xử lý thủ công bypass lỗi word_ids() của ViHealthBERT (Slow Tokenizer).
     """
 
     def __init__(
@@ -345,11 +344,7 @@ class NERDataLoader:
         self.label2id = label2id or NER_LABEL2ID
 
     def load_conll_file(self, file_path: Path) -> List[Dict[str, List[str]]]:
-        """
-        Đọc file CoNLL format.
-        Mỗi câu là 1 block cách nhau bằng dòng trống.
-        Mỗi dòng: <token>\t<label> hoặc <token> <label>
-        """
+        """Đọc file CoNLL format."""
         file_path = Path(file_path)
         sentences: List[Dict[str, List[str]]] = []
         current_tokens: List[str] = []
@@ -368,64 +363,21 @@ class NERDataLoader:
                         current_labels = []
                     continue
 
-                # Tách token và label (hỗ trợ cả tab và space)
                 parts = line.split("\t") if "\t" in line else line.split()
                 if len(parts) >= 2:
                     current_tokens.append(parts[0])
                     current_labels.append(parts[-1])
 
-        # Câu cuối cùng (nếu file không kết thúc bằng dòng trống)
         if current_tokens:
-            sentences.append({
-                "tokens": current_tokens,
-                "ner_tags": current_labels,
-            })
+            sentences.append({"tokens": current_tokens, "ner_tags": current_labels})
 
         print(f"[NERDataLoader] Đã load {len(sentences)} câu từ {file_path.name}")
         return sentences
 
-    def _align_labels_with_tokens(
-        self,
-        labels: List[str],
-        word_ids: List[Optional[int]],
-    ) -> List[int]:
+    def tokenize_and_align(self, sentences: List[Dict[str, List[str]]]) -> Dataset:
         """
-        Align nhãn NER với sub-tokens sau WordPiece tokenization.
-        
-        Quy tắc:
-        - Sub-token đầu tiên của word: giữ nguyên nhãn gốc
-        - Các sub-token tiếp theo: 
-          + Nếu nhãn gốc là B-xxx -> đổi thành I-xxx (tránh lặp B-tag)
-          + Nếu nhãn gốc là I-xxx hoặc O -> giữ nguyên
-        - Special tokens ([CLS], [SEP], [PAD]): gán -100 (ignore trong loss)
-        """
-        aligned_labels: List[int] = []
-        previous_word_idx: Optional[int] = None
-
-        for word_idx in word_ids:
-            if word_idx is None:
-                # Special token -> ignore
-                aligned_labels.append(-100)
-            elif word_idx != previous_word_idx:
-                # Sub-token ĐẦU TIÊN của word -> giữ nhãn gốc
-                aligned_labels.append(self.label2id.get(labels[word_idx], 0))
-            else:
-                # Sub-token TIẾP THEO -> chuyển B- thành I-
-                label = labels[word_idx]
-                if label.startswith("B-"):
-                    i_label = "I-" + label[2:]
-                    aligned_labels.append(self.label2id.get(i_label, 0))
-                else:
-                    aligned_labels.append(self.label2id.get(label, 0))
-            previous_word_idx = word_idx
-
-        return aligned_labels
-
-    def tokenize_and_align(
-        self, sentences: List[Dict[str, List[str]]]
-    ) -> Dataset:
-        """
-        Tokenize tokens đã word-segmented và align nhãn NER.
+        Tokenize thủ công từng từ để bypass lỗi word_ids() của Slow Tokenizer.
+        Chỉ gán nhãn cho sub-token đầu tiên, các sub-token sau gán -100.
         """
         all_input_ids: List[List[int]] = []
         all_attention_masks: List[List[int]] = []
@@ -435,20 +387,35 @@ class NERDataLoader:
             tokens = sent["tokens"]
             ner_tags = sent["ner_tags"]
 
-            encoding = self.tokenizer(
-                tokens,
-                is_split_into_words=True,
-                max_length=self.max_length,
-                padding="max_length",
-                truncation=True,
-            )
+            input_ids = [self.tokenizer.cls_token_id]
+            label_ids = [-100]
 
-            word_ids = encoding.word_ids()
-            aligned_labels = self._align_labels_with_tokens(ner_tags, word_ids)
+            for word, label in zip(tokens, ner_tags):
+                # Tokenize từng từ độc lập
+                word_tokens = self.tokenizer.tokenize(word)
+                if not word_tokens: continue
 
-            all_input_ids.append(encoding["input_ids"])
-            all_attention_masks.append(encoding["attention_mask"])
-            all_labels.append(aligned_labels)
+                w_ids = self.tokenizer.convert_tokens_to_ids(word_tokens)
+                input_ids.extend(w_ids)
+
+                # Sub-token đầu tiên nhận nhãn thật, còn lại nhận -100
+                label_ids.append(self.label2id.get(label, 0))
+                label_ids.extend([-100] * (len(w_ids) - 1))
+
+            input_ids.append(self.tokenizer.sep_token_id)
+            label_ids.append(-100)
+
+            # Cắt xén (Truncation) nếu vượt max_length
+            if len(input_ids) > self.max_length:
+                input_ids = input_ids[:self.max_length-1] + [self.tokenizer.sep_token_id]
+                label_ids = label_ids[:self.max_length-1] + [-100]
+
+            # Không cần padding ở đây, DataCollatorForTokenClassification sẽ lo việc đó
+            attention_mask = [1] * len(input_ids)
+
+            all_input_ids.append(input_ids)
+            all_attention_masks.append(attention_mask)
+            all_labels.append(label_ids)
 
         dataset = Dataset.from_dict({
             "input_ids": all_input_ids,
@@ -464,7 +431,6 @@ class NERDataLoader:
         val_path: Optional[Path] = None,
         test_split: float = 0.15,
     ) -> DatasetDict:
-        """Pipeline: load CoNLL -> tokenize & align -> split."""
         train_sents = self.load_conll_file(train_path)
 
         if val_path and Path(val_path).exists():
@@ -631,10 +597,7 @@ class TopicDataLoader:
 class IntentDataLoader:
     """
     Tải dataset ViMQ Intent cho bài toán Multi-label Classification.
-    4 nhãn Intent: Diagnosis, Treatment, Severity, Cause.
-    
-    ⚠️ LƯU Ý: Đây là bài toán MULTI-LABEL (1 câu có thể có nhiều intent).
-    Labels được mã hóa dạng binary vector [0,1,1,0] thay vì single integer.
+    ĐÃ SỬA LỖI: Tự động chuẩn hóa (normalize) tên nhãn từ ViMQ sang Config.
     """
 
     def __init__(
@@ -642,19 +605,15 @@ class IntentDataLoader:
         tokenizer_name: str = INTENT_MODEL_NAME,
         max_length: int = 256,
     ) -> None:
-        from config import INTENT_MODEL_NAME
+        from config import INTENT_MODEL_NAME, INTENT_LABEL2ID, INTENT_LABELS, INTENT_NUM_LABELS
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
         self.max_length = max_length
         self.label2id = INTENT_LABEL2ID
         self.id2label = {v: k for k, v in INTENT_LABEL2ID.items()}
+        self.intent_labels = INTENT_LABELS
+        self.num_labels = INTENT_NUM_LABELS
 
     def load_raw_data(self, file_path: Path) -> List[Dict[str, Any]]:
-        """
-        Đọc file ViMQ Intent.
-        Hỗ trợ format: JSON list hoặc JSONL.
-        Mỗi sample: {"text": "...", "intents": ["Diagnosis", "Treatment"]}
-        hoặc:        {"text": "...", "intent": "Diagnosis"}
-        """
         file_path = Path(file_path)
         samples: List[Dict[str, Any]] = []
 
@@ -662,110 +621,73 @@ class IntentDataLoader:
             with open(file_path, "r", encoding="utf-8") as f:
                 raw = json.load(f)
                 samples = raw if isinstance(raw, list) else raw.get("data", [])
-        elif file_path.suffix == ".jsonl":
-            with open(file_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        samples.append(json.loads(line))
-        elif file_path.suffix == ".csv":
-            df = pd.read_csv(file_path)
-            for _, row in df.iterrows():
-                sample: Dict[str, Any] = {"text": row["text"]}
-                # Hỗ trợ cả 2 format: cột "intents" (multi) hoặc cột "intent" (single)
-                if "intents" in df.columns:
-                    intents = row["intents"]
-                    if isinstance(intents, str):
-                        sample["intents"] = [i.strip() for i in intents.split(",")]
-                    else:
-                        sample["intents"] = [intents]
-                elif "intent" in df.columns:
-                    sample["intents"] = [row["intent"]]
-                samples.append(sample)
         else:
-            raise ValueError(f"Unsupported: {file_path.suffix}")
+            raise ValueError(f"Unsupported format: {file_path.suffix}")
 
         print(f"[IntentDataLoader] Đã load {len(samples)} samples từ {file_path.name}")
         return samples
 
+    def _normalize_intents(self, intents: List[str]) -> List[str]:
+        """HÀM MỚI: Dịch nhãn thô của ViMQ sang nhãn chuẩn của hệ thống"""
+        normalized = []
+        for intent in intents:
+            intent_lower = intent.lower()
+            if "diagnosis" in intent_lower: normalized.append("Diagnosis")
+            elif "severity" in intent_lower: normalized.append("Severity")
+            elif "treatment" in intent_lower: normalized.append("Treatment")
+            elif "cause" in intent_lower: normalized.append("Cause")
+            else: normalized.append(intent)
+        return normalized
+
     def _encode_multi_label(self, intents: List[str]) -> List[float]:
-        """
-        Chuyển danh sách intent thành binary vector.
-        VD: ["Diagnosis", "Cause"] -> [1.0, 0.0, 0.0, 1.0]
-        Dùng float vì BCEWithLogitsLoss yêu cầu target dạng float.
-        """
-        label_vector = [0.0] * INTENT_NUM_LABELS
+        label_vector = [0.0] * self.num_labels
         for intent in intents:
             if intent in self.label2id:
                 label_vector[self.label2id[intent]] = 1.0
         return label_vector
 
-    def compute_class_weights(
-        self, samples: List[Dict[str, Any]]
-    ) -> torch.Tensor:
-        """
-        Tính pos_weight cho BCEWithLogitsLoss để xử lý Imbalanced Data.
-        
-        Công thức: pos_weight[i] = num_negative[i] / num_positive[i]
-        
-        Giải thích:
-        - Với mỗi class i, đếm số samples DƯƠNG (có nhãn i) và ÂM (không có nhãn i).
-        - Class nào có ít samples dương (thiểu số) -> pos_weight cao -> loss phạt nặng hơn
-          khi model dự đoán sai class đó -> buộc model học tốt hơn các class hiếm.
-        - VD: nếu class "Severity" chỉ có 50 positive / 950 negative
-          -> pos_weight = 950/50 = 19.0 (phạt gấp 19 lần khi miss class này).
-        """
-        # Đếm số positive samples cho mỗi class
-        positive_counts = [0] * INTENT_NUM_LABELS
+    def compute_class_weights(self, samples: List[Dict[str, Any]]) -> torch.Tensor:
+        positive_counts = [0] * self.num_labels
         total = len(samples)
 
         for sample in samples:
-            intents = sample.get("intents", [sample.get("intent", "")])
-            if isinstance(intents, str):
-                intents = [intents]
+            intents = sample.get("labels", sample.get("intents", sample.get("intent", [])))
+            if isinstance(intents, str): intents = [intents]
+            
+            # CHUẨN HÓA NHÃN TRƯỚC KHI ĐẾM
+            intents = self._normalize_intents(intents)
+            
             for intent in intents:
                 if intent in self.label2id:
                     positive_counts[self.label2id[intent]] += 1
 
-        # Tính pos_weight = negative_count / positive_count
         pos_weights: List[float] = []
         for i, count in enumerate(positive_counts):
             if count > 0:
-                neg_count = total - count
-                weight = neg_count / count
+                pos_weights.append((total - count) / count)
             else:
-                # Nếu class không có sample nào -> weight = 1.0 (mặc định)
-                weight = 1.0
-            pos_weights.append(weight)
+                pos_weights.append(1.0)
 
-        print(f"[IntentDataLoader] Phân bố Intent labels:")
-        for i, label in enumerate(INTENT_LABELS):
-            print(f"  - {label}: {positive_counts[i]}/{total} samples "
-                  f"(pos_weight = {pos_weights[i]:.2f})")
+        print(f"[IntentDataLoader] Phân bố Intent labels sau khi chuẩn hóa:")
+        for i, label in enumerate(self.intent_labels):
+            print(f"  - {label}: {positive_counts[i]}/{total} (pos_weight = {pos_weights[i]:.2f})")
 
         return torch.tensor(pos_weights, dtype=torch.float32)
 
-    def tokenize_and_encode(
-        self, samples: List[Dict[str, Any]]
-    ) -> Dataset:
-        """Tokenize và encode multi-label."""
+    def tokenize_and_encode(self, samples: List[Dict[str, Any]]) -> Dataset:
         texts: List[str] = []
         labels: List[List[float]] = []
 
         for sample in samples:
             texts.append(sample["text"])
-            intents = sample.get("intents", [sample.get("intent", "")])
-            if isinstance(intents, str):
-                intents = [intents]
+            intents = sample.get("labels", sample.get("intents", sample.get("intent", [])))
+            if isinstance(intents, str): intents = [intents]
+            
+            # CHUẨN HÓA NHÃN TRƯỚC KHI ĐƯA VÀO MODEL
+            intents = self._normalize_intents(intents)
             labels.append(self._encode_multi_label(intents))
 
-        encodings = self.tokenizer(
-            texts,
-            max_length=self.max_length,
-            padding="max_length",
-            truncation=True,
-        )
-
+        encodings = self.tokenizer(texts, max_length=self.max_length, padding="max_length", truncation=True)
         dataset = Dataset.from_dict({
             "input_ids": encodings["input_ids"],
             "attention_mask": encodings["attention_mask"],
@@ -775,15 +697,8 @@ class IntentDataLoader:
         return dataset
 
     def prepare_datasets(
-        self,
-        train_path: Path,
-        val_path: Optional[Path] = None,
-        test_split: float = 0.15,
+        self, train_path: Path, val_path: Optional[Path] = None, test_split: float = 0.15,
     ) -> Tuple[DatasetDict, torch.Tensor]:
-        """
-        Pipeline hoàn chỉnh.
-        Returns: (DatasetDict, pos_weight tensor cho loss function)
-        """
         train_samples = self.load_raw_data(train_path)
         pos_weight = self.compute_class_weights(train_samples)
 
