@@ -6,23 +6,60 @@ Bao gồm:
   - Schema test: Pydantic models (Request/Response) validation
   - API test: FastAPI endpoint /analyze, /health
   - Edge case: model None, partial failure, concurrent requests
+
+NOTE: Pydantic schemas được định nghĩa lại ở đây (replica từ main.py)
+      để tránh import main.py → models.py → custom_models.py → torchcrf
+      (chuỗi import nặng cần GPU/HF Hub).
 """
 
 import asyncio
 import sys
 from pathlib import Path
+from typing import Any, Dict, List
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pydantic import BaseModel, Field
+
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from main import (
-    MedicalQueryRequest,
-    MedicalQueryResponse,
-    NLUResult,
-    HealthCheckResponse,
-)
+
+# ============================================================
+# 📦 PYDANTIC SCHEMA REPLICAS (mirror từ main.py)
+# Tránh import main.py để không trigger chuỗi import nặng
+# ============================================================
+
+class MedicalQueryRequest(BaseModel):
+    """Schema cho request đầu vào."""
+    text: str = Field(
+        ...,
+        min_length=1,
+        max_length=2048,
+        description="Câu hỏi y tế cần phân tích",
+    )
+
+
+class NLUResult(BaseModel):
+    """Kết quả phân tích NLU."""
+    entities: List[str] = Field(default_factory=list)
+    topic: Dict[str, Any] = Field(default_factory=dict)
+    intent: Dict[str, Any] = Field(default_factory=dict)
+
+
+class MedicalQueryResponse(BaseModel):
+    """Schema cho response trả về."""
+    raw_text: str = Field(description="Text gốc từ user")
+    clean_text: str = Field(description="Text đã giải viết tắt")
+    nlu_result: NLUResult = Field(description="Kết quả NLU")
+    processing_time_ms: float = Field(description="Thời gian xử lý (ms)")
+
+
+class HealthCheckResponse(BaseModel):
+    """Schema cho health check."""
+    status: str
+    models_loaded: Dict[str, bool]
+
 
 
 # ============================================================
