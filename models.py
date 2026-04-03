@@ -249,191 +249,63 @@ class AcronymCrossEncoder(BaseNLUModel):
 # 📍 TRẠM 2A: MEDICAL NER (Named Entity Recognition)
 # ============================================================
 
-class MedicalNER(BaseNLUModel):
-    """
-    Trích xuất thực thể y tế: Triệu chứng/Bệnh, Thủ thuật, Thuốc.
-    
-    ⚠️ RÀNG BUỘC: vihealthbert-base-word yêu cầu word-segmentation.
-    Class này tích hợp bước word-segment trước khi tokenize.
-    """
+import os
+import torch
+from transformers import AutoTokenizer
+from custom_models import ViHealthBertCRF
+from config import NER_MODEL_DIR, NER_MODEL_NAME, NER_ID2LABEL
 
-    def __init__(
-        self,
-        model_dir: Path = NER_MODEL_DIR,
-        device: Optional[str] = None,
-    ) -> None:
-        super().__init__(model_dir, device)
-        self.id2label = NER_ID2LABEL
-        self._segmenter = None
-
-    def _init_word_segmenter(self) -> None:
-        """
-        Khởi tạo word segmenter cho tiếng Việt.
-        Ưu tiên py_vncorenlp, fallback sang underthesea, cuối cùng dùng regex cơ bản.
-        """
-        try:
-            import py_vncorenlp
-            # py_vncorenlp cần download model VnCoreNLP
-            self._segmenter = py_vncorenlp.VnCoreNLP(
-                annotators=["wseg"],
-                save_dir=str(Path.home() / "vncorenlp"),
-            )
-            print("[MedicalNER] Word segmenter: py_vncorenlp ✓")
-            return
-        except Exception as e:
-            print(f"[MedicalNER] py_vncorenlp không khả dụng: {e}")
-
-        try:
-            from underthesea import word_tokenize
-            self._segmenter = word_tokenize
-            print("[MedicalNER] Word segmenter: underthesea ✓")
-            return
-        except ImportError:
-            print("[MedicalNER] underthesea không khả dụng.")
-
-        # Fallback: regex đơn giản (không segment, giữ nguyên text)
-        print("[MedicalNER] ⚠️ Fallback: Không có word segmenter. Sử dụng text gốc.")
-        self._segmenter = None
-
-    def _word_segment(self, text: str) -> str:
-        """
-        Word-segmentation cho tiếng Việt.
-        Output: text với các từ ghép nối bằng '_' (vd: "đau_dạ_dày")
-        """
-        if self._segmenter is None:
-            return text
-
-        # py_vncorenlp trả về list of sentences
-        if hasattr(self._segmenter, "word_segment"):
-            segmented = self._segmenter.word_segment(text)
-            if isinstance(segmented, list):
-                return " ".join(segmented)
-            return segmented
-
-        # underthesea.word_tokenize trả về string
-        if callable(self._segmenter):
-            return self._segmenter(text, format="text")
-
-        return text
-
-    def load_model(self) -> None:
-        """Load fine-tuned NER model hoặc base model."""
-        self._init_word_segmenter()
-
-        if self.model_dir.exists() and (self.model_dir / "config.json").exists():
-            print(f"[MedicalNER] Loading fine-tuned model từ {self.model_dir}")
-            self.tokenizer = AutoTokenizer.from_pretrained(str(self.model_dir))
-            self.model = AutoModelForTokenClassification.from_pretrained(
-                str(self.model_dir)
-            )
-        else:
-            print(f"[MedicalNER] ⚠️ Không tìm thấy fine-tuned model.")
-            print(f"  -> Fallback: Load base model {NER_MODEL_NAME}")
-            self.tokenizer = AutoTokenizer.from_pretrained(NER_MODEL_NAME)
-            self.model = AutoModelForTokenClassification.from_pretrained(
-                NER_MODEL_NAME,
-                num_labels=len(NER_LABELS),
-                id2label=NER_ID2LABEL,
-                ignore_mismatched_sizes=True,
-            )
-
+class MedicalNER:
+    def __init__(self, model_dir=NER_MODEL_DIR):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(f"[MedicalNER] Đang load tokenizer từ: {model_dir}")
+        self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
+        
+        print(f"[MedicalNER] Đang khởi tạo ViHealthBERT + CRF...")
+        self.model = ViHealthBertCRF(model_name=NER_MODEL_NAME, num_labels=len(NER_ID2LABEL))
+        
+        model_path = os.path.join(model_dir, "pytorch_model.bin")
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"Không tìm thấy trọng số model tại {model_path}")
+            
+        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         self.model.to(self.device)
         self.model.eval()
-        self._is_loaded = True
+        self.id2label = NER_ID2LABEL
 
-    @torch.no_grad()
-    def predict(self, text: str) -> List[str]:
-        """
-        Trích xuất entities từ text.
-        
-        Luồng xử lý:
-        1. Word-segment text ("đau dạ dày" -> "đau_dạ_dày")
-        2. Tokenize bằng WordPiece
-        3. Model predict nhãn BIO cho mỗi token
-        4. Gom các token B-xxx + I-xxx thành entity hoàn chỉnh
-        5. Trả về list entity strings
-        """
-        self.ensure_loaded()
-
-        # Bước 1: Word-segmentation (BẮT BUỘC cho vihealthbert-base-word)
-        segmented_text = self._word_segment(text)
-
-        # Bước 2: Tokenize
+    def predict(self, text: str):
+        # Tách từ thô (giả định input đã được word-segment bằng underthesea)
+        words = text.split()
         inputs = self.tokenizer(
-            segmented_text,
-            max_length=MAX_INPUT_LENGTH,
-            truncation=True,
-            return_tensors="pt",
-            return_offsets_mapping=True,
-        ).to(self.device)
-
-        offset_mapping = inputs.pop("offset_mapping")[0]
-
-        # Bước 3: Predict
-        outputs = self.model(**inputs)
-        predictions = torch.argmax(outputs.logits, dim=-1)[0]
-
-        # Bước 4: Decode - gom BIO tags thành entities
-        tokens = self.tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
-        entities: List[str] = []
-        current_entity_tokens: List[str] = []
-        current_entity_type: Optional[str] = None
-
-        for idx, (token, pred_id) in enumerate(zip(tokens, predictions)):
-            # Bỏ qua special tokens
-            if token in ("[CLS]", "[SEP]", "[PAD]", "<s>", "</s>", "<pad>"):
-                continue
-
-            label = self.id2label.get(pred_id.item(), "O")
-
-            if label.startswith("B-"):
-                # Lưu entity trước đó (nếu có)
-                if current_entity_tokens:
-                    entity_text = self._reconstruct_entity(current_entity_tokens)
-                    entities.append(entity_text)
-
-                # Bắt đầu entity mới
-                current_entity_type = label[2:]
-                current_entity_tokens = [token]
-
-            elif label.startswith("I-") and current_entity_type:
-                # Tiếp tục entity hiện tại
-                current_entity_tokens.append(token)
-
-            else:
-                # O tag -> kết thúc entity hiện tại
-                if current_entity_tokens:
-                    entity_text = self._reconstruct_entity(current_entity_tokens)
-                    entities.append(entity_text)
-                    current_entity_tokens = []
-                    current_entity_type = None
-
-        # Entity cuối cùng
-        if current_entity_tokens:
-            entity_text = self._reconstruct_entity(current_entity_tokens)
-            entities.append(entity_text)
-
-        return entities
-
-    @staticmethod
-    def _reconstruct_entity(tokens: List[str]) -> str:
-        """
-        Ghép lại các sub-tokens thành entity text đọc được.
-        - Loại bỏ prefix '##' của WordPiece sub-tokens
-        - Thay '_' (word-segmentation) bằng space
-        """
-        result = ""
-        for token in tokens:
-            if token.startswith("##"):
-                result += token[2:]
-            else:
-                if result:
-                    result += " "
-                result += token
-
-        # Thay dấu '_' (word-segmentation marker) bằng space
-        result = result.replace("_", " ")
-        return result.strip()
+            words, 
+            is_split_into_words=True, 
+            return_tensors="pt", 
+            truncation=True, 
+            max_length=256
+        )
+        
+        # Chuyển dữ liệu lên GPU (nếu có)
+        input_ids = inputs["input_ids"].to(self.device)
+        attention_mask = inputs["attention_mask"].to(self.device)
+        
+        with torch.no_grad():
+            # Vì không truyền labels, model sẽ tự động gọi self.crf.decode() và trả về danh sách dự đoán
+            predictions = self.model(input_ids=input_ids, attention_mask=attention_mask)
+        
+        # Lấy kết quả của câu đầu tiên trong batch
+        pred_ids = predictions[0]
+        word_ids = inputs.word_ids()
+        
+        # Lọc bỏ các sub-tokens (chỉ lấy nhãn của mảnh từ đầu tiên)
+        result = []
+        current_word_idx = None
+        for idx, word_idx in enumerate(word_ids):
+            if word_idx is not None and word_idx != current_word_idx:
+                label = self.id2label.get(pred_ids[idx], "O")
+                result.append({"word": words[word_idx], "label": label})
+                current_word_idx = word_idx
+                
+        return result
 
 
 # ============================================================
@@ -526,94 +398,57 @@ class TopicClassifier(BaseNLUModel):
 # 📍 TRẠM 2C: INTENT CLASSIFIER (Multi-label)
 # ============================================================
 
-class IntentClassifier(BaseNLUModel):
-    """
-    Phân loại ý định câu hỏi y tế: Diagnosis, Treatment, Severity, Cause.
-    
-    ⚠️ MULTI-LABEL: Một câu có thể có nhiều intent đồng thời.
-    Sử dụng sigmoid threshold thay vì argmax.
-    """
+import os
+import json
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from config import INTENT_MODEL_DIR, INTENT_MODEL_NAME, INTENT_ID2LABEL
 
-    def __init__(
-        self,
-        model_dir: Path = INTENT_MODEL_DIR,
-        threshold: float = 0.5,
-        device: Optional[str] = None,
-    ) -> None:
-        super().__init__(model_dir, device)
-        self.threshold = threshold
-        self.id2label = INTENT_ID2LABEL
-
-    def load_model(self) -> None:
-        """Load fine-tuned intent model hoặc base model."""
-        if self.model_dir.exists() and (self.model_dir / "config.json").exists():
-            print(f"[IntentClassifier] Loading fine-tuned model từ {self.model_dir}")
-            self.tokenizer = AutoTokenizer.from_pretrained(str(self.model_dir))
-            self.model = AutoModelForSequenceClassification.from_pretrained(
-                str(self.model_dir)
-            )
-        else:
-            print(f"[IntentClassifier] ⚠️ Không tìm thấy fine-tuned model.")
-            print(f"  -> Fallback: Load base model {INTENT_MODEL_NAME}")
-            self.tokenizer = AutoTokenizer.from_pretrained(INTENT_MODEL_NAME)
-            self.model = AutoModelForSequenceClassification.from_pretrained(
-                INTENT_MODEL_NAME,
-                num_labels=INTENT_NUM_LABELS,
-                problem_type="multi_label_classification",
-                ignore_mismatched_sizes=True,
-            )
-
+class IntentClassifier:
+    def __init__(self, model_dir=INTENT_MODEL_DIR):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(f"[IntentClassifier] Đang load model từ: {model_dir}")
+        self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_dir)
         self.model.to(self.device)
         self.model.eval()
-        self._is_loaded = True
-
-    @torch.no_grad()
-    def predict(self, text: str) -> Dict[str, Any]:
-        """
-        Dự đoán intent(s) của câu hỏi y tế.
+        self.id2label = INTENT_ID2LABEL
         
-        Logic Multi-label:
-        - Dùng sigmoid (không phải softmax) vì các intent KHÔNG loại trừ nhau.
-        - Áp dụng threshold: intent nào có prob >= threshold thì được chọn.
-        - VD: "Đau bụng có phải viêm ruột thừa không, cần mổ không?"
-          -> Diagnosis (0.85) ✓, Treatment (0.72) ✓, Severity (0.30) ✗
-        
-        Returns: {"intents": [...], "scores": {...}, "primary_intent": str}
-        """
-        self.ensure_loaded()
+        # Load Dynamic Thresholds
+        threshold_path = os.path.join(model_dir, "thresholds.json")
+        if os.path.exists(threshold_path):
+            with open(threshold_path, "r", encoding="utf-8") as f:
+                self.thresholds = json.load(f)
+            print("[IntentClassifier] Đã nạp Dynamic Thresholds.")
+        else:
+            self.thresholds = {label: 0.5 for label in self.id2label.values()}
+            print("[IntentClassifier] Không tìm thấy thresholds.json, dùng mặc định 0.5.")
 
+    def predict(self, text: str):
         inputs = self.tokenizer(
-            text,
-            max_length=MAX_INPUT_LENGTH,
-            padding="max_length",
-            truncation=True,
-            return_tensors="pt",
+            text, 
+            return_tensors="pt", 
+            truncation=True, 
+            max_length=256
         ).to(self.device)
-
-        outputs = self.model(**inputs)
-        # Sigmoid cho multi-label (KHÔNG DÙNG softmax)
-        probs = torch.sigmoid(outputs.logits)[0]
-
-        # Lọc intent vượt threshold
-        predicted_intents: List[str] = []
-        scores: Dict[str, float] = {}
-
-        for idx, prob in enumerate(probs):
-            label = self.id2label.get(idx, f"intent_{idx}")
-            score = round(prob.item(), 4)
-            scores[label] = score
-            if score >= self.threshold:
-                predicted_intents.append(label)
-
-        # Intent chính = intent có score cao nhất
-        primary_intent = max(scores, key=scores.get) if scores else "Unknown"
-
-        # Nếu không có intent nào vượt threshold -> lấy intent cao nhất
-        if not predicted_intents:
-            predicted_intents = [primary_intent]
-
-        return {
-            "intents": predicted_intents,
-            "scores": scores,
-            "primary_intent": primary_intent,
-        }
+        
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+            
+        logits = outputs.logits[0]
+        probs = torch.sigmoid(logits).cpu().numpy()
+        
+        results = []
+        for i, prob in enumerate(probs):
+            label_name = self.id2label[i]
+            # Áp dụng ngưỡng riêng cho từng class
+            t = self.thresholds.get(label_name, 0.5)
+            if prob >= t:
+                results.append({"intent": label_name, "score": float(prob)})
+                
+        # Fallback: Nếu không qua ngưỡng nào, trả về intent có prob cao nhất
+        if not results:
+            best_idx = np.argmax(probs)
+            results.append({"intent": self.id2label[best_idx], "score": float(probs[best_idx])})
+            
+        return results
