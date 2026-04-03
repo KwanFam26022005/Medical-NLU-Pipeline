@@ -11,6 +11,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from transformers import (
@@ -198,7 +199,6 @@ class AcronymCrossEncoder(BaseNLUModel):
 
         best_expansion = ranked[0][0]
         # Confidence = sigmoid(best) - sigmoid(second_best)
-        import torch
         probs = [torch.sigmoid(torch.tensor(s)).item() for s in scores]
         probs_sorted = sorted(probs, reverse=True)
         confidence = probs_sorted[0] - probs_sorted[1] if len(probs_sorted) > 1 else 1.0
@@ -250,10 +250,7 @@ class AcronymCrossEncoder(BaseNLUModel):
 # ============================================================
 
 import os
-import torch
-from transformers import AutoTokenizer
 from custom_models import ViHealthBertCRF
-from config import NER_MODEL_DIR, NER_MODEL_NAME, NER_ID2LABEL
 
 class MedicalNER:
     def __init__(self, model_dir=NER_MODEL_DIR):
@@ -307,6 +304,15 @@ class MedicalNER:
                 
         return result
 
+    def load_model(self):
+        """Wrapper: model đã load trong __init__. Method này tồn tại để tương thích với main.py lifecycle."""
+        pass
+
+    async def async_predict(self, text: str):
+        """Wrapper bất đồng bộ cho predict(). Tương thích với asyncio.gather trong main.py."""
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.predict, text)
+
 
 # ============================================================
 # 📍 TRẠM 2B: TOPIC CLASSIFIER (PENDING DATA - SKELETON)
@@ -332,33 +338,50 @@ class TopicClassifier(BaseNLUModel):
 
     def load_model(self) -> None:
         """Load model. Nếu chưa fine-tune, load base model với dummy head."""
-        label_map_path = self.model_dir / "label_mapping.json"
+        model_dir_str = str(self.model_dir)
+        is_hf_hub = "/" in model_dir_str and not self.model_dir.exists()
 
-        if self.model_dir.exists() and (self.model_dir / "config.json").exists():
-            print(f"[TopicClassifier] Loading fine-tuned model từ {self.model_dir}")
-            self.tokenizer = AutoTokenizer.from_pretrained(str(self.model_dir))
-            self.model = AutoModelForSequenceClassification.from_pretrained(
-                str(self.model_dir)
-            )
+        if is_hf_hub:
+            # HuggingFace Hub model (e.g. "KwanFam26022005/model2B-topic-classification")
+            print(f"[TopicClassifier] Loading fine-tuned model từ HF Hub: {model_dir_str}")
+            self.tokenizer = AutoTokenizer.from_pretrained(model_dir_str)
+            self.model = AutoModelForSequenceClassification.from_pretrained(model_dir_str)
             self._is_ready = True
+
+            # Load label mapping từ HF Hub
+            try:
+                from huggingface_hub import hf_hub_download
+                label_map_file = hf_hub_download(repo_id=model_dir_str, filename="label_mapping.json")
+                with open(label_map_file, "r", encoding="utf-8") as f:
+                    raw = json.load(f)
+                    self.id2label = {int(k): v for k, v in raw.items()}
+            except Exception as e:
+                print(f"  ⚠️ Không tìm thấy label_mapping.json trên HF Hub: {e}")
+
+        elif self.model_dir.exists() and (self.model_dir / "config.json").exists():
+            # Local fine-tuned model
+            print(f"[TopicClassifier] Loading fine-tuned model từ {self.model_dir}")
+            self.tokenizer = AutoTokenizer.from_pretrained(model_dir_str)
+            self.model = AutoModelForSequenceClassification.from_pretrained(model_dir_str)
+            self._is_ready = True
+
+            # Load label mapping từ local
+            label_map_path = self.model_dir / "label_mapping.json"
+            if label_map_path.exists():
+                with open(label_map_path, "r", encoding="utf-8") as f:
+                    raw = json.load(f)
+                    self.id2label = {int(k): v for k, v in raw.items()}
         else:
             # ⚠️ DUMMY MODE: Load base model, output sẽ không có ý nghĩa
             print(f"[TopicClassifier] ⚠️ Chưa có fine-tuned model.")
             print(f"  -> DUMMY MODE: Load base model. Output chỉ mang tính placeholder.")
             self.tokenizer = AutoTokenizer.from_pretrained(TOPIC_MODEL_NAME)
-            # Tạm đặt num_labels = 20 (placeholder, sẽ thay đổi theo data thực tế)
             self.model = AutoModelForSequenceClassification.from_pretrained(
                 TOPIC_MODEL_NAME,
                 num_labels=20,
                 ignore_mismatched_sizes=True,
             )
             self._is_ready = False
-
-        # Load label mapping nếu có
-        if label_map_path.exists():
-            with open(label_map_path, "r", encoding="utf-8") as f:
-                raw = json.load(f)
-                self.id2label = {int(k): v for k, v in raw.items()}
 
         self.model.to(self.device)
         self.model.eval()
@@ -397,12 +420,6 @@ class TopicClassifier(BaseNLUModel):
 # ============================================================
 # 📍 TRẠM 2C: INTENT CLASSIFIER (Multi-label)
 # ============================================================
-
-import os
-import json
-import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from config import INTENT_MODEL_DIR, INTENT_MODEL_NAME, INTENT_ID2LABEL
 
 class IntentClassifier:
     def __init__(self, model_dir=INTENT_MODEL_DIR):
@@ -452,3 +469,12 @@ class IntentClassifier:
             results.append({"intent": self.id2label[best_idx], "score": float(probs[best_idx])})
             
         return results
+
+    def load_model(self):
+        """Wrapper: model đã load trong __init__. Method này tồn tại để tương thích với main.py lifecycle."""
+        pass
+
+    async def async_predict(self, text: str):
+        """Wrapper bất đồng bộ cho predict(). Tương thích với asyncio.gather trong main.py."""
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.predict, text)

@@ -33,7 +33,8 @@ ACRONYM_DICT_PATH = ACRONYM_DATA_DIR / "dictionary.json"
 # 📍 TRẠM 2A: MEDICAL NER
 # ============================================================
 NER_MODEL_NAME = VIHEALTHBERT_WORD
-NER_MODEL_DIR = MODEL_DIR / "medical_ner"
+NER_MODEL_DIR="hoangkhang1628/vihealthbert-crf-medical-ner"
+# NER_MODEL_DIR = MODEL_DIR / "medical_ner"
 # Nhãn NER theo BIO schema - ViMQ dataset
 NER_LABELS = [
     "O",
@@ -51,7 +52,7 @@ NER_ID2LABEL = {idx: label for idx, label in enumerate(NER_LABELS)}
 # 📍 TRẠM 2B: TOPIC CLASSIFICATION (PENDING DATA)
 # ============================================================
 TOPIC_MODEL_NAME = VIHEALTHBERT_SYLLABLE
-TOPIC_MODEL_DIR = MODEL_DIR / "topic_classification"
+TOPIC_MODEL_DIR = "KwanFam26022005/model2B-topic-classification"
 TOPIC_DATASET_READY = True   # ✅ Dataset đã sẵn sàng (JSON đã được tạo bởi build_topic_dataset.py)
 TOPIC_CSV_FILES = [
     DATA_DIR / "train_ml.csv",
@@ -69,7 +70,7 @@ TOPIC_LABEL_MAP_JSON = DATA_DIR / "topic_label_map.json"
 # 📍 TRẠM 2C: INTENT CLASSIFICATION
 # ============================================================
 INTENT_MODEL_NAME = VIHEALTHBERT_SYLLABLE
-INTENT_MODEL_DIR = MODEL_DIR / "intent_classification"
+INTENT_MODEL_DIR = "hoangkhang1628/vihealthbert-asl-medical-intent"
 INTENT_LABELS = ["Diagnosis", "Treatment", "Severity", "Cause"]
 INTENT_NUM_LABELS = len(INTENT_LABELS)
 INTENT_LABEL2ID = {label: idx for idx, label in enumerate(INTENT_LABELS)}
