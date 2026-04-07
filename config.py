@@ -96,6 +96,24 @@ TRAIN_CONFIG = {
 }
 
 # ============================================================
+# 🔄 CRAG CONFIG (Phase 2 — Corrective RAG)
+# ============================================================
+USE_CRAG = False  # Feature flag: True = CRAG pipeline, False = Phase 1 pipeline
+
+# Retry limits cho CRAG state machine
+CRAG_MAX_RETRIEVAL_COUNT = 3   # 1 lần gốc + 2 lần retry (rewrite → re-retrieve)
+CRAG_MAX_GENERATION_COUNT = 2  # 1 lần gốc + 1 lần retry (hallucination retry)
+
+# Retrieval config
+CRAG_TOPIC_CONFIDENCE_THRESHOLD = 0.70  # Ngưỡng topic_confidence để áp dụng Qdrant filter
+CRAG_TOP_K_RETRIEVAL = 50               # Số docs hybrid search ban đầu
+CRAG_TOP_K_RERANK = 5                   # Số docs sau reranker
+
+# Qdrant config
+QDRANT_URL = "http://localhost:6333"
+QDRANT_COLLECTION_NAME = "medical_kb"
+
+# ============================================================
 # 🌐 API CONFIG
 # ============================================================
 API_HOST = "0.0.0.0"

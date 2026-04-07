@@ -14,10 +14,12 @@ import argparse
 import json
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+from eval_utils import evaluate_cross_encoder
 
 
 def load_model_and_dict(model_dir: str, device: torch.device):
@@ -50,8 +52,12 @@ def load_model_and_dict(model_dir: str, device: torch.device):
 @torch.no_grad()
 def predict_sample(
     model, tokenizer, acronym_dict, sample: Dict, device: torch.device, max_length: int = 128
-) -> str:
-    """Predict the best expansion for a single sample."""
+) -> Tuple[str, List[str], List[float]]:
+    """Predict the best expansion for a single sample.
+
+    Returns:
+        (predicted_expansion, candidates, scores) — scores reusable for MRR.
+    """
     text = sample["text"]
     start = sample["start_char_idx"]
     length = sample["length_acronym"]
@@ -62,11 +68,11 @@ def predict_sample(
 
     candidates = acronym_dict.get(acronym, [])
     if not candidates:
-        return acronym
+        return acronym, [], []
     if len(candidates) == 1:
-        return candidates[0]
+        return candidates[0], candidates, [1.0]
 
-    # Encode all candidates
+    # Encode all candidates — single forward pass
     encodings = tokenizer(
         [marked_text] * len(candidates),
         candidates,
@@ -77,79 +83,14 @@ def predict_sample(
     ).to(device)
 
     logits = model(**encodings).logits.squeeze(-1)
-    best_idx = logits.argmax().item()
-    return candidates[best_idx]
+    scores = logits.cpu().tolist()
+    if isinstance(scores, float):
+        scores = [scores]
+    best_idx = max(range(len(scores)), key=lambda i: scores[i])
+    return candidates[best_idx], candidates, scores
 
 
-def evaluate(
-    model, tokenizer, acronym_dict, samples: List[Dict],
-    device: torch.device, train_acronyms: set = None,
-) -> Dict[str, Any]:
-    """Run evaluation on a list of samples."""
-    predictions = {}
-    total = 0
-    correct = 0
-    seen_total = seen_correct = 0
-    unseen_total = unseen_correct = 0
-    mrr_sum = 0.0
-
-    for idx, sample in enumerate(samples):
-        text = sample["text"]
-        start = sample["start_char_idx"]
-        length = sample["length_acronym"]
-        acronym = text[start: start + length]
-        gold = sample["expansion"]
-
-        # Predict
-        pred = predict_sample(model, tokenizer, acronym_dict, sample, device)
-        predictions[str(idx)] = pred
-
-        total += 1
-        if pred == gold:
-            correct += 1
-
-        # MRR
-        marked_text = text[:start] + "<e>" + acronym + "</e>" + text[start + length:]
-        candidates = acronym_dict.get(acronym, [])
-        if candidates:
-            encodings = tokenizer(
-                [marked_text] * len(candidates),
-                candidates,
-                max_length=128, padding=True, truncation="only_first", return_tensors="pt",
-            ).to(device)
-            with torch.no_grad():
-                logits = model(**encodings).logits.squeeze(-1)
-            scores = logits.cpu().tolist()
-            if isinstance(scores, float):
-                scores = [scores]
-            ranked = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
-            for rank, i in enumerate(ranked, 1):
-                if candidates[i] == gold:
-                    mrr_sum += 1.0 / rank
-                    break
-
-        # Seen/unseen
-        if train_acronyms is not None:
-            if acronym in train_acronyms:
-                seen_total += 1
-                if pred == gold:
-                    seen_correct += 1
-            else:
-                unseen_total += 1
-                if pred == gold:
-                    unseen_correct += 1
-
-    metrics = {
-        "accuracy": correct / max(total, 1) * 100,
-        "mrr": mrr_sum / max(total, 1),
-        "total": total,
-        "correct": correct,
-        "seen_accuracy": seen_correct / max(seen_total, 1) * 100 if seen_total > 0 else None,
-        "unseen_accuracy": unseen_correct / max(unseen_total, 1) * 100 if unseen_total > 0 else None,
-        "seen_total": seen_total,
-        "unseen_total": unseen_total,
-    }
-    return predictions, metrics
+# evaluate() is now provided by eval_utils.evaluate_cross_encoder()
 
 
 def main():
@@ -185,13 +126,24 @@ def main():
             train_acronyms.add(acr)
         print(f"   Train acronyms (seen): {len(train_acronyms)}")
 
-    # Evaluate
+    # Evaluate using shared module
     print("\n📊 Running evaluation...")
     start = time.time()
-    predictions, metrics = evaluate(
+    predictions, raw_metrics = evaluate_cross_encoder(
         model, tokenizer, acronym_dict, test_samples, device, train_acronyms
     )
     elapsed = time.time() - start
+
+    # Remap keys for backward-compatible output format
+    metrics = {
+        "accuracy": raw_metrics["accuracy"],
+        "mrr": raw_metrics["mrr"],
+        "total": raw_metrics["total"],
+        "seen_accuracy": raw_metrics["seen_acc"] if raw_metrics["seen_total"] > 0 else None,
+        "unseen_accuracy": raw_metrics["unseen_acc"] if raw_metrics["unseen_total"] > 0 else None,
+        "seen_total": raw_metrics["seen_total"],
+        "unseen_total": raw_metrics["unseen_total"],
+    }
 
     # Print results
     print(f"\n{'='*50}")
@@ -204,7 +156,6 @@ def main():
         print(f"   Seen Acc:       {metrics['seen_accuracy']:.2f}% ({metrics['seen_total']})")
     if metrics['unseen_accuracy'] is not None:
         print(f"   Unseen Acc:     {metrics['unseen_accuracy']:.2f}% ({metrics['unseen_total']})")
-
     # Save predictions
     with open(args.output, "w", encoding="utf-8") as f:
         json.dump(predictions, f, ensure_ascii=False, indent=2)
@@ -215,6 +166,61 @@ def main():
     with open(metrics_path, "w", encoding="utf-8") as f:
         json.dump(metrics, f, ensure_ascii=False, indent=2)
     print(f"💾 Metrics saved to {metrics_path}")
+
+    # ── P4: Error Analysis ──────────────────────────────────
+    from collections import defaultdict
+
+    errors = []
+    per_acronym = defaultdict(lambda: {"total": 0, "correct": 0})
+
+    for idx, sample in enumerate(test_samples):
+        text = sample["text"]
+        s = sample["start_char_idx"]
+        ln = sample["length_acronym"]
+        acronym = text[s: s + ln]
+        gold = sample["expansion"]
+        pred_str = predictions[str(idx)]
+
+        per_acronym[acronym]["total"] += 1
+        if pred_str == gold:
+            per_acronym[acronym]["correct"] += 1
+        else:
+            # Get scores for error details
+            _, cands, scores = predict_sample(
+                model, tokenizer, acronym_dict, sample, device
+            )
+            top_scores = dict(zip(cands, scores)) if cands and scores else {}
+            sorted_scores = sorted(scores, reverse=True) if scores else []
+            margin = (sorted_scores[0] - sorted_scores[1]) if len(sorted_scores) >= 2 else None
+
+            errors.append({
+                "idx": idx,
+                "acronym": acronym,
+                "gold": gold,
+                "predicted": pred_str,
+                "is_seen": acronym in train_acronyms if train_acronyms else None,
+                "top_scores": top_scores,
+                "margin": margin,
+            })
+
+    # Per-acronym accuracy
+    per_acronym_list = {}
+    for acr, stats in sorted(per_acronym.items(), key=lambda x: x[1]["correct"] / max(x[1]["total"], 1)):
+        stats["accuracy"] = round(stats["correct"] / max(stats["total"], 1) * 100, 2)
+        per_acronym_list[acr] = stats
+
+    error_analysis = {
+        "total_errors": len(errors),
+        "total_samples": len(test_samples),
+        "error_rate": round(len(errors) / max(len(test_samples), 1) * 100, 2),
+        "errors": errors,
+        "per_acronym": per_acronym_list,
+    }
+
+    ea_path = Path(args.output).stem + "_error_analysis.json"
+    with open(ea_path, "w", encoding="utf-8") as f:
+        json.dump(error_analysis, f, ensure_ascii=False, indent=2)
+    print(f"🔍 Error analysis saved to {ea_path} ({len(errors)} errors)")
 
 
 if __name__ == "__main__":

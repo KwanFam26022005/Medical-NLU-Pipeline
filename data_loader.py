@@ -4,6 +4,7 @@ Hỗ trợ: acrDrAid (WSD), ViMQ NER (BIO), ViMQ Intent, Topic JSON (preprocess_
 """
 
 import json
+import random
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -35,6 +36,35 @@ from config import (
 # 📍 TRẠM 1: ACRONYM DATA LOADER (acrDrAid — Cross-Encoder)
 # Architecture: Binary scoring per (context, candidate) pair
 # ============================================================
+
+
+def augment_context(marked_text: str, window_range: Tuple[int, int] = (10, 30)) -> str:
+    """
+    Random context truncation: giữ acronym + ±K tokens ngẫu nhiên xung quanh.
+    Giúp model không memorize toàn bộ câu, buộc học từ local context.
+    """
+    e_start = marked_text.find("<e>")
+    e_end = marked_text.find("</e>")
+    if e_start == -1 or e_end == -1:
+        return marked_text
+
+    e_end += len("</e>")
+    before = marked_text[:e_start].split()
+    entity_span = marked_text[e_start:e_end]
+    after = marked_text[e_end:].split()
+
+    k = random.randint(*window_range)
+    k_before = min(k // 2, len(before))
+    k_after = min(k - k_before, len(after))
+
+    parts = []
+    if k_before > 0:
+        parts.extend(before[-k_before:])
+    parts.append(entity_span)
+    if k_after > 0:
+        parts.extend(after[:k_after])
+
+    return " ".join(parts)
 
 class AcronymDataset(TorchDataset):
     """
@@ -116,6 +146,10 @@ class AcronymDataset(TorchDataset):
         candidates = self.acronym_dict[acronym]
 
         if self.mode == "train":
+            # Context augmentation with p=0.5
+            if random.random() < 0.5:
+                marked_text = augment_context(marked_text)
+
             # Flatten: return one (context, candidate, label) pair per call
             # We sample: the positive + all negatives
             pairs = []
@@ -134,6 +168,26 @@ class AcronymDataset(TorchDataset):
                     "attention_mask": enc["attention_mask"].squeeze(0),
                     "label": torch.tensor(label, dtype=torch.float),
                 })
+
+            # Cross-acronym negative: 1 expansion from a DIFFERENT acronym
+            other_acronyms = [a for a in self.acronym_dict if a != acronym]
+            if other_acronyms:
+                cross_acr = random.choice(other_acronyms)
+                cross_exp = random.choice(self.acronym_dict[cross_acr])
+                enc = self.tokenizer(
+                    marked_text,
+                    cross_exp,
+                    max_length=self.max_length,
+                    padding="max_length",
+                    truncation="only_first",
+                    return_tensors="pt",
+                )
+                pairs.append({
+                    "input_ids": enc["input_ids"].squeeze(0),
+                    "attention_mask": enc["attention_mask"].squeeze(0),
+                    "label": torch.tensor(0.0, dtype=torch.float),
+                })
+
             return pairs  # List[Dict] — collate_fn will flatten
 
         else:
@@ -259,6 +313,8 @@ class AcronymDataLoader:
     ) -> Tuple[AcronymDataset, AcronymDataset, AcronymDataset]:
         """
         Build train, dev, test AcronymDataset objects.
+        Includes dev-set stratification: holds out ~15% of acronyms from train
+        so they appear as 'unseen' in dev evaluation.
 
         Returns:
             (train_dataset, dev_dataset, test_dataset)
@@ -267,13 +323,36 @@ class AcronymDataLoader:
         dev_samples = self._load_samples("dev")
         test_samples = self._load_samples("test")
 
-        print(f"\n📊 Dataset stats:")
-        print(f"   Train: {len(train_samples)} samples")
+        # --- Dev-set stratification: create unseen acronyms in dev ---
+        from collections import Counter
+
+        def _extract_acronym(s):
+            return s["text"][s["start_char_idx"]:s["start_char_idx"] + s["length_acronym"]]
+
+        train_acr_counts = Counter(_extract_acronym(s) for s in train_samples)
+        dev_acronyms = set(_extract_acronym(s) for s in dev_samples)
+        shared = train_acr_counts.keys() & dev_acronyms
+
+        # Hold out ~15% of shared acronyms (least frequent in train)
+        n_holdout = max(1, int(len(shared) * 0.15))
+        shared_sorted = sorted(shared, key=lambda a: train_acr_counts[a])
+        holdout_acronyms = set(shared_sorted[:n_holdout])
+
+        train_samples_filtered = [
+            s for s in train_samples if _extract_acronym(s) not in holdout_acronyms
+        ]
+        print(f"\n\U0001f500 Dev stratification: held out {len(holdout_acronyms)} acronyms from train")
+        print(f"   Held out: {holdout_acronyms}")
+        print(f"   Train samples: {len(train_samples)} \u2192 {len(train_samples_filtered)}")
+        # --- End stratification ---
+
+        print(f"\n\U0001f4ca Dataset stats:")
+        print(f"   Train: {len(train_samples_filtered)} samples")
         print(f"   Dev:   {len(dev_samples)} samples")
         print(f"   Test:  {len(test_samples)} samples")
 
         train_ds = AcronymDataset(
-            train_samples, self.acronym_dict, self.tokenizer,
+            train_samples_filtered, self.acronym_dict, self.tokenizer,
             max_length=self.max_length, mode="train",
         )
         dev_ds = AcronymDataset(
@@ -285,13 +364,20 @@ class AcronymDataLoader:
             max_length=self.max_length, mode="eval",
         )
 
+        # Store raw samples for eval_utils (P3)
+        self.raw_train = train_samples_filtered
+        self.raw_dev = dev_samples
+        self.raw_test = test_samples
+
         # Compute seen/unseen stats
         train_acronyms = set(s["acronym"] for s in train_ds.processed)
         test_acronyms = set(s["acronym"] for s in test_ds.processed)
-        unseen = test_acronyms - train_acronyms
+        dev_unseen = dev_acronyms - train_acronyms
+        test_unseen = test_acronyms - train_acronyms
         print(f"   Train acronyms: {len(train_acronyms)}")
+        print(f"   Dev unseen:     {len(dev_unseen)} ({len(dev_unseen)/max(len(dev_acronyms),1)*100:.1f}%)")
         print(f"   Test acronyms:  {len(test_acronyms)}")
-        print(f"   Unseen in test: {len(unseen)} ({len(unseen)/max(len(test_acronyms),1)*100:.1f}%)")
+        print(f"   Unseen in test: {len(test_unseen)} ({len(test_unseen)/max(len(test_acronyms),1)*100:.1f}%)")
 
         return train_ds, dev_ds, test_ds
 
