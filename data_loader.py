@@ -146,10 +146,6 @@ class AcronymDataset(TorchDataset):
         candidates = self.acronym_dict[acronym]
 
         if self.mode == "train":
-            # Context augmentation with p=0.3 (giữ nhiều context hơn cho medical terms)
-            if random.random() < 0.3:
-                marked_text = augment_context(marked_text)
-
             # Flatten: return one (context, candidate, label) pair per call
             # We sample: the positive + all negatives
             pairs = []
@@ -168,26 +164,6 @@ class AcronymDataset(TorchDataset):
                     "attention_mask": enc["attention_mask"].squeeze(0),
                     "label": torch.tensor(label, dtype=torch.float),
                 })
-
-            # Cross-acronym negative: 1 expansion from a DIFFERENT acronym (p=0.5)
-            other_acronyms = [a for a in self.acronym_dict if a != acronym]
-            if other_acronyms and random.random() < 0.5:
-                cross_acr = random.choice(other_acronyms)
-                cross_exp = random.choice(self.acronym_dict[cross_acr])
-                enc = self.tokenizer(
-                    marked_text,
-                    cross_exp,
-                    max_length=self.max_length,
-                    padding="max_length",
-                    truncation="only_first",
-                    return_tensors="pt",
-                )
-                pairs.append({
-                    "input_ids": enc["input_ids"].squeeze(0),
-                    "attention_mask": enc["attention_mask"].squeeze(0),
-                    "label": torch.tensor(0.0, dtype=torch.float),
-                })
-
             return pairs  # List[Dict] — collate_fn will flatten
 
         else:
