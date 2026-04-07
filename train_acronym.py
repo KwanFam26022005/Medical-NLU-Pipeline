@@ -298,6 +298,10 @@ class AcronymTrainer:
                 self.data_loader.tokenizer.save_pretrained(output_dir)
                 self.data_loader.save_dictionary(output_dir)
 
+                # Save train_acronyms for consistent seen/unseen eval
+                with open(output_dir / "train_acronyms.json", "w", encoding="utf-8") as f:
+                    json.dump(sorted(list(self.train_acronyms)), f, ensure_ascii=False)
+
                 print(f"     ✅ NEW BEST! Saved to {output_dir}")
             else:
                 patience_counter += 1
@@ -353,7 +357,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--fp16", action="store_true", default=True)
     parser.add_argument("--no_fp16", action="store_true")
-    parser.add_argument("--patience", type=int, default=5)
+    parser.add_argument("--patience", type=int, default=3)
     return parser.parse_args()
 
 
