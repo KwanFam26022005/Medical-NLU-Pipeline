@@ -38,7 +38,7 @@ from config import (
 # ============================================================
 
 
-def augment_context(marked_text: str, window_range: Tuple[int, int] = (10, 30)) -> str:
+def augment_context(marked_text: str, window_range: Tuple[int, int] = (15, 40)) -> str:
     """
     Random context truncation: giữ acronym + ±K tokens ngẫu nhiên xung quanh.
     Giúp model không memorize toàn bộ câu, buộc học từ local context.
@@ -146,8 +146,8 @@ class AcronymDataset(TorchDataset):
         candidates = self.acronym_dict[acronym]
 
         if self.mode == "train":
-            # Context augmentation with p=0.5
-            if random.random() < 0.5:
+            # Context augmentation with p=0.3 (giữ nhiều context hơn cho medical terms)
+            if random.random() < 0.3:
                 marked_text = augment_context(marked_text)
 
             # Flatten: return one (context, candidate, label) pair per call
@@ -169,9 +169,9 @@ class AcronymDataset(TorchDataset):
                     "label": torch.tensor(label, dtype=torch.float),
                 })
 
-            # Cross-acronym negative: 1 expansion from a DIFFERENT acronym
+            # Cross-acronym negative: 1 expansion from a DIFFERENT acronym (p=0.5)
             other_acronyms = [a for a in self.acronym_dict if a != acronym]
-            if other_acronyms:
+            if other_acronyms and random.random() < 0.5:
                 cross_acr = random.choice(other_acronyms)
                 cross_exp = random.choice(self.acronym_dict[cross_acr])
                 enc = self.tokenizer(
@@ -313,7 +313,7 @@ class AcronymDataLoader:
     ) -> Tuple[AcronymDataset, AcronymDataset, AcronymDataset]:
         """
         Build train, dev, test AcronymDataset objects.
-        Includes dev-set stratification: holds out ~15% of acronyms from train
+        Includes dev-set stratification: holds out ~5% of acronyms from train
         so they appear as 'unseen' in dev evaluation.
 
         Returns:
@@ -333,8 +333,8 @@ class AcronymDataLoader:
         dev_acronyms = set(_extract_acronym(s) for s in dev_samples)
         shared = train_acr_counts.keys() & dev_acronyms
 
-        # Hold out ~15% of shared acronyms (least frequent in train)
-        n_holdout = max(1, int(len(shared) * 0.15))
+        # Hold out ~5% of shared acronyms (least frequent in train)
+        n_holdout = max(1, int(len(shared) * 0.05))
         shared_sorted = sorted(shared, key=lambda a: train_acr_counts[a])
         holdout_acronyms = set(shared_sorted[:n_holdout])
 

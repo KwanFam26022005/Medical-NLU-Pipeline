@@ -116,15 +116,22 @@ def main():
     print(f"   {args.split.capitalize()} samples: {len(test_samples)}")
 
     # Load train acronyms for seen/unseen split
+    # Priority: train_acronyms.json (saved by trainer) > raw train data
     train_acronyms = set()
-    train_path = data_dir / "train" / "data.json"
-    if train_path.exists():
-        with open(train_path, "r", encoding="utf-8") as f:
-            train_samples = json.load(f)
-        for s in train_samples:
-            acr = s["text"][s["start_char_idx"]: s["start_char_idx"] + s["length_acronym"]]
-            train_acronyms.add(acr)
-        print(f"   Train acronyms (seen): {len(train_acronyms)}")
+    ta_path = Path(args.model_dir) / "train_acronyms.json"
+    if ta_path.exists():
+        with open(ta_path, "r", encoding="utf-8") as f:
+            train_acronyms = set(json.load(f))
+        print(f"   Train acronyms (from model): {len(train_acronyms)}")
+    else:
+        train_path = data_dir / "train" / "data.json"
+        if train_path.exists():
+            with open(train_path, "r", encoding="utf-8") as f:
+                train_samples = json.load(f)
+            for s in train_samples:
+                acr = s["text"][s["start_char_idx"]: s["start_char_idx"] + s["length_acronym"]]
+                train_acronyms.add(acr)
+            print(f"   Train acronyms (from raw data, fallback): {len(train_acronyms)}")
 
     # Evaluate using shared module
     print("\n📊 Running evaluation...")
