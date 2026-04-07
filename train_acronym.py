@@ -32,6 +32,8 @@ from transformers import (
     get_cosine_schedule_with_warmup,
 )
 
+from eval_utils import evaluate_cross_encoder
+
 from data_loader import (
     AcronymDataLoader,
     AcronymDataset,
@@ -59,7 +61,8 @@ class TrainingConfig:
     max_length: int = 128
     seed: int = 42
     fp16: bool = True
-    patience: int = 5  # early stopping patience
+    patience: int = 3  # early stopping patience (reduced from 5)
+    label_smoothing: float = 0.1  # smooth 0/1 labels → 0.05/0.95
 
 
 # ============================================================
@@ -159,6 +162,10 @@ class AcronymTrainer:
             attention_mask = batch["attention_mask"].to(self.device)
             labels = batch["labels"].to(self.device)
 
+            # Label smoothing: 0.0/1.0 → 0.05/0.95
+            if self.config.label_smoothing > 0:
+                labels = labels * (1 - self.config.label_smoothing) + self.config.label_smoothing / 2
+
             # Forward
             if self.scaler is not None:
                 with torch.amp.autocast("cuda"):
@@ -208,89 +215,27 @@ class AcronymTrainer:
             "train_binary_acc": correct / total_samples * 100,
         }
 
-    @torch.no_grad()
-    def evaluate(self, dataset: AcronymDataset, name: str = "dev") -> Dict[str, float]:
+    def evaluate(self, name: str = "dev") -> Dict[str, float]:
         """
-        Evaluate ranking accuracy on a dataset.
-        
-        For each sample: score all candidates → check if argmax == correct.
-        Also computes MRR and seen/unseen accuracy.
+        Evaluate using shared eval_utils module.
+        Uses raw samples stored by data_loader for consistency.
         """
-        self.model.eval()
-        tokenizer = self.data_loader.tokenizer
+        raw_samples = {
+            "dev": self.data_loader.raw_dev,
+            "test": self.data_loader.raw_test,
+        }.get(name, self.data_loader.raw_dev)
 
-        total = 0
-        correct = 0
-        seen_total = 0
-        seen_correct = 0
-        unseen_total = 0
-        unseen_correct = 0
-        mrr_sum = 0.0
-
-        for idx in range(len(dataset)):
-            item = dataset[idx]  # eval mode → returns grouped candidates
-            acronym = item["acronym"]
-            candidates = item["candidates"]
-            correct_expansion = item["correct_expansion"]
-            encodings = item["encodings"]
-
-            if len(encodings) == 0:
-                continue
-
-            # Stack all candidate encodings
-            input_ids = torch.stack([e["input_ids"] for e in encodings]).to(self.device)
-            attention_mask = torch.stack([e["attention_mask"] for e in encodings]).to(self.device)
-
-            # Score
-            if self.scaler is not None:
-                with torch.amp.autocast("cuda"):
-                    outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
-            else:
-                outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
-            
-            logits = outputs.logits.squeeze(-1)
-            scores = logits.cpu().tolist()
-            if isinstance(scores, float):
-                scores = [scores]
-
-            # Rank candidates
-            ranked_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
-            predicted_expansion = candidates[ranked_indices[0]]
-
-            # Find rank of correct answer
-            correct_rank = None
-            for rank, idx_r in enumerate(ranked_indices, 1):
-                if candidates[idx_r] == correct_expansion:
-                    correct_rank = rank
-                    break
-
-            total += 1
-            if predicted_expansion == correct_expansion:
-                correct += 1
-            if correct_rank:
-                mrr_sum += 1.0 / correct_rank
-
-            # Seen vs unseen
-            is_seen = acronym in self.train_acronyms
-            if is_seen:
-                seen_total += 1
-                if predicted_expansion == correct_expansion:
-                    seen_correct += 1
-            else:
-                unseen_total += 1
-                if predicted_expansion == correct_expansion:
-                    unseen_correct += 1
-
-        results = {
-            f"{name}_accuracy": correct / max(total, 1) * 100,
-            f"{name}_mrr": mrr_sum / max(total, 1),
-            f"{name}_seen_acc": seen_correct / max(seen_total, 1) * 100,
-            f"{name}_unseen_acc": unseen_correct / max(unseen_total, 1) * 100,
-            f"{name}_total": total,
-            f"{name}_seen_total": seen_total,
-            f"{name}_unseen_total": unseen_total,
-        }
-        return results
+        _, metrics = evaluate_cross_encoder(
+            self.model,
+            self.data_loader.tokenizer,
+            self.data_loader.acronym_dict,
+            raw_samples,
+            self.device,
+            train_acronyms=self.train_acronyms,
+            max_length=self.config.max_length,
+            name=name,
+        )
+        return metrics
 
     def train(self) -> None:
         """Full training loop with early stopping."""
@@ -320,7 +265,7 @@ class AcronymTrainer:
             train_metrics = self.train_epoch(epoch)
 
             # Evaluate on dev
-            dev_metrics = self.evaluate(self.dev_ds, name="dev")
+            dev_metrics = self.evaluate(name="dev")
 
             elapsed = time.time() - start_time
             epoch_results = {**train_metrics, **dev_metrics, "epoch": epoch, "elapsed_s": elapsed}
@@ -335,10 +280,17 @@ class AcronymTrainer:
             print(f"     Dev Seen Acc:   {dev_metrics['dev_seen_acc']:.2f}% ({dev_metrics['dev_seen_total']})")
             print(f"     Dev Unseen Acc: {dev_metrics['dev_unseen_acc']:.2f}% ({dev_metrics['dev_unseen_total']})")
 
-            # Best model checkpoint
-            current_accuracy = dev_metrics["dev_accuracy"]
-            if current_accuracy > best_accuracy:
-                best_accuracy = current_accuracy
+            # Best model checkpoint — combined metric (seen + unseen + MRR)
+            if dev_metrics["dev_unseen_total"] > 0:
+                current_score = (
+                    0.5 * dev_metrics["dev_seen_acc"]
+                    + 0.3 * dev_metrics["dev_unseen_acc"]
+                    + 0.2 * dev_metrics["dev_mrr"] * 100
+                )
+            else:
+                current_score = dev_metrics["dev_accuracy"]
+            if current_score > best_accuracy:
+                best_accuracy = current_score
                 patience_counter = 0
 
                 # Save model
@@ -370,7 +322,7 @@ class AcronymTrainer:
         )
         self.model.to(self.device)
         
-        test_metrics = self.evaluate(self.test_ds, name="test")
+        test_metrics = self.evaluate(name="test")
         print(f"   Test Accuracy:   {test_metrics['test_accuracy']:.2f}%")
         print(f"   Test MRR:        {test_metrics['test_mrr']:.4f}")
         print(f"   Test Seen Acc:   {test_metrics['test_seen_acc']:.2f}% ({test_metrics['test_seen_total']})")
