@@ -280,15 +280,8 @@ class AcronymTrainer:
             print(f"     Dev Seen Acc:   {dev_metrics['dev_seen_acc']:.2f}% ({dev_metrics['dev_seen_total']})")
             print(f"     Dev Unseen Acc: {dev_metrics['dev_unseen_acc']:.2f}% ({dev_metrics['dev_unseen_total']})")
 
-            # Best model checkpoint — combined metric (seen + unseen + MRR)
-            if dev_metrics["dev_unseen_total"] > 0:
-                current_score = (
-                    0.5 * dev_metrics["dev_seen_acc"]
-                    + 0.3 * dev_metrics["dev_unseen_acc"]
-                    + 0.2 * dev_metrics["dev_mrr"] * 100
-                )
-            else:
-                current_score = dev_metrics["dev_accuracy"]
+            # Best model checkpoint
+            current_score = dev_metrics["dev_accuracy"]
             if current_score > best_accuracy:
                 best_accuracy = current_score
                 patience_counter = 0
