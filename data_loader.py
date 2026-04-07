@@ -313,8 +313,6 @@ class AcronymDataLoader:
     ) -> Tuple[AcronymDataset, AcronymDataset, AcronymDataset]:
         """
         Build train, dev, test AcronymDataset objects.
-        Includes dev-set stratification: holds out ~5% of acronyms from train
-        so they appear as 'unseen' in dev evaluation.
 
         Returns:
             (train_dataset, dev_dataset, test_dataset)
@@ -323,36 +321,13 @@ class AcronymDataLoader:
         dev_samples = self._load_samples("dev")
         test_samples = self._load_samples("test")
 
-        # --- Dev-set stratification: create unseen acronyms in dev ---
-        from collections import Counter
-
-        def _extract_acronym(s):
-            return s["text"][s["start_char_idx"]:s["start_char_idx"] + s["length_acronym"]]
-
-        train_acr_counts = Counter(_extract_acronym(s) for s in train_samples)
-        dev_acronyms = set(_extract_acronym(s) for s in dev_samples)
-        shared = train_acr_counts.keys() & dev_acronyms
-
-        # Hold out ~5% of shared acronyms (least frequent in train)
-        n_holdout = max(1, int(len(shared) * 0.05))
-        shared_sorted = sorted(shared, key=lambda a: train_acr_counts[a])
-        holdout_acronyms = set(shared_sorted[:n_holdout])
-
-        train_samples_filtered = [
-            s for s in train_samples if _extract_acronym(s) not in holdout_acronyms
-        ]
-        print(f"\n\U0001f500 Dev stratification: held out {len(holdout_acronyms)} acronyms from train")
-        print(f"   Held out: {holdout_acronyms}")
-        print(f"   Train samples: {len(train_samples)} \u2192 {len(train_samples_filtered)}")
-        # --- End stratification ---
-
         print(f"\n\U0001f4ca Dataset stats:")
-        print(f"   Train: {len(train_samples_filtered)} samples")
+        print(f"   Train: {len(train_samples)} samples")
         print(f"   Dev:   {len(dev_samples)} samples")
         print(f"   Test:  {len(test_samples)} samples")
 
         train_ds = AcronymDataset(
-            train_samples_filtered, self.acronym_dict, self.tokenizer,
+            train_samples, self.acronym_dict, self.tokenizer,
             max_length=self.max_length, mode="train",
         )
         dev_ds = AcronymDataset(
@@ -364,20 +339,18 @@ class AcronymDataLoader:
             max_length=self.max_length, mode="eval",
         )
 
-        # Store raw samples for eval_utils (P3)
-        self.raw_train = train_samples_filtered
+        # Store raw samples for eval_utils
+        self.raw_train = train_samples
         self.raw_dev = dev_samples
         self.raw_test = test_samples
 
         # Compute seen/unseen stats
         train_acronyms = set(s["acronym"] for s in train_ds.processed)
         test_acronyms = set(s["acronym"] for s in test_ds.processed)
-        dev_unseen = dev_acronyms - train_acronyms
-        test_unseen = test_acronyms - train_acronyms
+        unseen = test_acronyms - train_acronyms
         print(f"   Train acronyms: {len(train_acronyms)}")
-        print(f"   Dev unseen:     {len(dev_unseen)} ({len(dev_unseen)/max(len(dev_acronyms),1)*100:.1f}%)")
         print(f"   Test acronyms:  {len(test_acronyms)}")
-        print(f"   Unseen in test: {len(test_unseen)} ({len(test_unseen)/max(len(test_acronyms),1)*100:.1f}%)")
+        print(f"   Unseen in test: {len(unseen)} ({len(unseen)/max(len(test_acronyms),1)*100:.1f}%)")
 
         return train_ds, dev_ds, test_ds
 
