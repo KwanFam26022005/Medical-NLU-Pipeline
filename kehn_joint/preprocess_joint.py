@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from config_joint import (
     VIMQ_DATA_DIR, TOPIC_DATA_DIR, JOINT_DATA_DIR,
     ENTITY_TYPE_MAP, NER2ID, INTENT2ID, TOPIC2ID, TOPIC_LABELS,
-    PSEUDO_CONFIG,
+    PSEUDO_CONFIG, TOPIC_REMAP, TOPIC_DROP,
 )
 
 
@@ -204,6 +204,26 @@ def main():
     train_samples = pseudo_label_topic(train_samples, device)
     dev_samples = pseudo_label_topic(dev_samples, device)
     test_samples = pseudo_label_topic(test_samples, device)
+
+    # --- Remap + Drop dead topic classes ---
+    def remap_and_filter(samples):
+        out = []
+        for s in samples:
+            t = s.get("topic_label")
+            if t in TOPIC_DROP:
+                continue
+            if t in TOPIC_REMAP:
+                new_t = TOPIC_REMAP[t]
+                s["topic_label"] = new_t
+                s["topic_label_id"] = TOPIC2ID.get(new_t, -1)
+            elif t is not None and t in TOPIC2ID:
+                s["topic_label_id"] = TOPIC2ID[t]
+            out.append(s)
+        return out
+
+    train_samples = remap_and_filter(train_samples)
+    dev_samples = remap_and_filter(dev_samples)
+    test_samples = remap_and_filter(test_samples)
 
     # Filter: chỉ giữ samples có topic label
     train_labeled = [s for s in train_samples if s["topic_label_id"] >= 0]

@@ -48,14 +48,19 @@ ENTITY_TYPE_MAP = {
     "drug": "DRU",
 }
 
-# Topic labels (18 classes, from topic_label_map.json)
+# Topic labels (16 classes — dropped traditional_medicine [1 sample],
+# merged oncology → internal_medicine [17 samples])
 TOPIC_LABELS = [
     "cardiology", "dentistry", "dermatology", "endocrinology",
     "ent", "gastroenterology", "internal_medicine", "neurology",
-    "nutrition", "obstetrics_gynecology", "oncology", "ophthalmology",
+    "nutrition", "obstetrics_gynecology", "ophthalmology",
     "orthopedics", "pediatrics", "reproductive_endocrinology",
-    "rheumatology", "traditional_medicine", "urology",
+    "rheumatology", "urology",
 ]
+
+# Remap rules applied during preprocessing (oncology → internal_medicine)
+TOPIC_REMAP = {"oncology": "internal_medicine"}
+TOPIC_DROP = {"traditional_medicine"}
 TOPIC2ID = {label: idx for idx, label in enumerate(TOPIC_LABELS)}
 ID2TOPIC = {idx: label for idx, label in enumerate(TOPIC_LABELS)}
 N_TOPIC = len(TOPIC_LABELS)
@@ -120,6 +125,6 @@ TRAIN_CONFIG = {
 # 📊 PSEUDO-LABELING CONFIG
 # ============================================================
 PSEUDO_CONFIG = {
-    "topic_confidence_threshold": 0.6,
+    "topic_confidence_threshold": 0.90,
     "tokenizer_for_topic_model": "demdecuong/vihealthbert-base-syllable",
 }
