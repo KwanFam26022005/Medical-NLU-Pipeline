@@ -3,7 +3,7 @@
 > **Module:** Trạm 1 — Acronym Word Sense Disambiguation  
 > **Backbone:** `demdecuong/vihealthbert-base-syllable` (RoBERTa-base, 135M params)  
 > **Dataset:** acrDrAid (LREC 2022) — Vietnamese Medical Acronyms  
-> **Kết quả:** Overall Accuracy **91.77%** | Unseen Accuracy **84.94%** | MRR **0.9533**
+> **Kết quả:** Overall Accuracy **91.68%** | Unseen Accuracy **84.29%** | MRR **0.9525**
 
 ---
 
@@ -15,13 +15,16 @@ Trước khi đi sâu vào nền tảng toán học của Cross-Encoder, chúng 
 Từ điển y tế `dictionary.json` là minh chứng rõ ràng nhất cho độ phức tạp của ngôn từ lâm sàng. Sự nhập nhằng ngữ nghĩa (Semantic Ambiguity) xảy ra khi nhiều thuật ngữ khác nhau bị bác sĩ viết tắt giống hệt nhau.
 
 Thống kê cho thấy tỷ lệ mâu thuẫn là cực kỳ cao. Cụ thể, các chữ viết tắt thuộc Top "nguy hiểm" nhất bao gồm:
-- Từ `tn` dẫn đầu với **7 ý nghĩa hoàn toàn khác biệt**: *thai nhi, thâm nhiễm, tiểu não, túi ngực, thính não, tiếp nhận, tự nhiên*.
-- Từ `tc` cũng bám sát với **7 ý nghĩa**: *tử cung, tính chất, tổ chức, triệu chứng, tiêm chủng, tiêu chuẩn, tiểu cầu*.
-- Hàng loạt từ khác như `đm` (động mạch, đái máy...), `bt` (bình thường, buồng trứng...) đều sở hữu từ 3-5 nghĩa.
+- Từ `tt` dẫn đầu với **17 ý nghĩa hoàn toàn khác biệt** — đây là mức đa nghĩa cao nhất trong toàn bộ từ điển.
+- Nhóm tiếp theo gồm `bt`, `nt`, `tp` với **8 ý nghĩa** mỗi từ.
+- Tiếp đến là `tn`, `tc`, `ht`, `đt`, `ct` với **7 ý nghĩa** mỗi từ.
+- Từ `kk` cũng sở hữu **5 nghĩa** khác biệt.
 
-> **💡 Insight rút ra:** Mức độ đa nghĩa kinh khủng này chính là **"tử huyệt" của các kiến trúc Multi-class truyền thống**. Khi một từ duy nhất có tới 7 nhãn khác nhau chỉ chực chờ "đánh lừa" mô hình, việc ép model phải chọn 1 trong 280 nhãn cố định là một canh bạc. Điều này là tiền đề bắt buộc kiến trúc hệ thống **phải chuyển mình sang Cross-Encoder** — nơi mô hình không cần "nhớ" nhãn, mà chỉ đối chiếu trực tiếp ngữ cảnh với từng đáp án để chấm điểm.
+> **💡 Insight rút ra:** Mức độ đa nghĩa kinh khủng này chính là **"tử huyệt" của các kiến trúc Multi-class truyền thống**. Khi một từ duy nhất có tới 17 nhãn khác nhau chỉ chực chờ "đánh lừa" mô hình, việc ép model phải chọn 1 trong 280 nhãn cố định là một canh bạc. Điều này là tiền đề bắt buộc kiến trúc hệ thống **phải chuyển mình sang Cross-Encoder** — nơi mô hình không cần "nhớ" nhãn, mà chỉ đối chiếu trực tiếp ngữ cảnh với từng đáp án để chấm điểm.
 
 ![Mức độ Đa nghĩa](../reports/figures/acronym_top10_ambiguity.png)
+
+![Thống kê độ dài Acronym & Expansion](../reports/figures/tram1_length_statistics.png)
 
 ### 1.2 Phân bố Chiều dài Văn bản & Tác động của Entity Markers
 Với thuật toán Cross-Encoder, đầu vào không chỉ là câu gốc mà bị "bơm" thêm rất nhiều ký tự: chèn thẻ đánh dấu `<e>`, `</e>`, nối thêm token phân cách `[SEP]`, và đẩy cả chuỗi `candidate_expansion` (nghĩa mở rộng ứng viên) vào đuôi câu. 
@@ -30,20 +33,22 @@ Tuy nhiên, phân tích kiểm chứng độ dài số từ (word count) cho th�
 - Ngay cả sau khi đã nhồi nhét toàn bộ các Marker và Candidate, **chiều dài trung vị (median) của câu đầu vào vẫn chỉ loanh quanh mức 47 từ**.
 - Rất hiếm có mẫu câu nào vượt ngưỡng 150 từ (kể cả với các chỉ định bệnh án phức tạp nhất).
 
-> **💡 Insight rút ra:** Phân bố phân xưng này chứng minh rằng hạn mức `max_length = 256` được thiết lập cho ViHealthBERT là **cực kỳ dư dả và an toàn tuyệt đối**. Kiến trúc này cam kết **mọi Candidate Expansion (nằm ở đuôi câu) sẽ không bao giờ bị cắt cụt (truncation)**, bảo toàn 100% ngữ nghĩa cho tầng Classification Head chấm điểm cặp câu.
+> **💡 Insight rút ra:** Phân bố phân xưng này chứng minh rằng hạn mức `max_length = 128` được thiết lập cho ViHealthBERT là **cực kỳ dư dả và an toàn tuyệt đối**. Kiến trúc này cam kết **mọi Candidate Expansion (nằm ở đuôi câu) sẽ không bao giờ bị cắt cụt (truncation)**, bảo toàn 100% ngữ nghĩa cho tầng Classification Head chấm điểm cặp câu.
 
 ![Phân bố Chiều dài](../reports/figures/acronym_text_length.png)
 
 ### 1.3 Sự bùng nổ Dữ liệu nhờ Hard Negative Mining (Data Explosion)
-Bộ dữ liệu `acrDrAid` gốc thực chất khá "mỏng". Trong tập Train, chúng ta chỉ có vỏn vẹn **2.678 mẫu gốc** (tương đương với 2.678 ngữ cảnh chứa từ viết tắt). Đối với Deep Learning, con số này rất dễ dẫn đến Overfitting.
+Bộ dữ liệu `acrDrAid` gốc thực chất khá "mỏng". Trong tập Train, chúng ta chỉ có vỏn vẹn **4.000 mẫu gốc** (tương đương với 4.000 ngữ cảnh chứa từ viết tắt). Đối với Deep Learning, con số này rất dễ dẫn đến Overfitting.
 
 Tuy nhiên, nhờ áp dụng chiến lược **Hard Negative Mining** kết hợp với hàm `acronym_train_collate_fn`, lượng dữ liệu đã trải qua một cú Big Bang:
 - Từ 1 câu gốc, thuật toán truy xuất `dictionary.json` để sinh ra 1 mẫu Positive (đúng) và $N$ mẫu Negatives (sai).
-- Kết quả: Tập Train quy mô 2.678 câu đã **nhân bản bùng nổ thành 10.638 cặp câu độc lập** (Sequence Pairs) dùng để feed thẳng vào Cross-Encoder.
+- Kết quả: Tập Train quy mô 4.000 câu đã **nhân bản bùng nổ thành 12.656 cặp câu độc lập** (Sequence Pairs) dùng để feed thẳng vào Cross-Encoder, với tỷ lệ Positive:Negative là **1:2.2** (4.000 cặp đúng và 8.656 cặp sai).
 
 > **💡 Insight rút ra:** Sức mạnh của Hard Negative Mining không chỉ nằm ở việc chống Overfitting bằng cách tăng gấp 4 lần quy mô dữ liệu. Cái hay nhất là nó ép mô hình phải đối mặt với **các đáp án "sai nhưng rất hợp lý"**. Việc bắt mô hình phải phân biệt sự khác biệt vi tế giữa `"cho thấy <e>kt</e> 3cm - kích thước"` và `"cho thấy <e>kt</e> 3cm - kỹ thuật"` là chiếc chìa khóa tối thượng mang lại hiệu suất **Unseen Accuracy cao đột biến** (khả năng suy luận Zero-shot trên từ viết tắt lạ).
 
 ![Sự bùng nổ dữ liệu](../reports/figures/acronym_data_explosion.png)
+
+![Tỷ lệ Positive vs Negative sau Hard Negative Mining](../reports/figures/tram1_pos_neg_ratio_pie.png)
 
 ---
 
@@ -157,7 +162,11 @@ Mapping mỗi từ viết tắt → tất cả các nghĩa mở rộng hợp l�
 }
 ```
 
-> **Thống kê dataset:** 135 acronyms, 424 total expansions, trung bình ~3.1 nghĩa/từ viết tắt. Phân bố: Train 4000, Dev 523, Test 1130 samples.
+> **Thống kê dataset gốc (`dictionary.json`):** 135 acronyms, 424 total expansions, trung bình ~3.14 nghĩa/từ viết tắt. Độ dài acronym trung bình: 2.07 ký tự. Độ dài expansion trung bình: 8.40 ký tự (2.04 từ). Phân bố: Train 4000, Dev 523, Test 1130 samples.
+>
+> **Thống kê constraint (`dictionary_constraint.json`):** 109 acronyms, 280 expansions, trung bình ~2.6 nghĩa/từ viết tắt. 26 acronyms chỉ tồn tại trong dictionary gốc nhưng không xuất hiện trong training data, và 144 expansions bị loại ra. Phân bố constraint sizes: Min 1, Max 9, Avg 2.6.
+
+![So sánh Dictionary vs Constraint](../reports/figures/tram1_dict_vs_constraint.png)
 
 ### 3.2 Kỹ thuật Entity Marking (Đánh dấu Thực thể)
 
@@ -322,7 +331,7 @@ trong đó $\mathbf{W} \in \mathbb{R}^{1 \times 768}$ và $b \in \mathbb{R}^1$.
 
 #### Công thức toán học
 
-Cho logit $z_i$ và label $y_i \in \{0, 1\}$:
+Cho logit $z_i$ và label $y_i \in \{0.05, 0.95\}$ (sau Label Smoothing $\epsilon = 0.1$):
 
 $$\sigma(z_i) = \frac{1}{1 + e^{-z_i}}$$
 
@@ -345,7 +354,8 @@ $$\mathcal{L}_{\text{BCE}} = -\frac{1}{N} \sum_{i=1}^{N} \left[ y_i \cdot \log(\
 | **Gradient Accumulation** | 4 steps (effective batch = 32) | Mô phỏng batch size lớn trên GPU nhỏ (Colab T4: 15GB VRAM) |
 | **Cosine Annealing** | Warmup 10% → decay to 0 | Tránh divergence ở đầu training; giảm mượt cuối training |
 | **FP16 Mixed Precision** | Enabled | Giảm 50% VRAM, tăng tốc 1.5-2x trên GPU Ampere/Turing |
-| **Early Stopping** | Patience = 5 epochs | Dừng sớm nếu dev accuracy không cải thiện → tránh overfitting |
+| **Label Smoothing** | $\epsilon = 0.1$ (labels $0/1 \to 0.05/0.95$) | Ngăn model overconfident trên hard labels → giảm overfitting, cải thiện generalization |
+| **Early Stopping** | Patience = 3 epochs | Dừng sớm nếu dev accuracy không cải thiện → tránh overfitting |
 | **Gradient Clipping** | Max norm = 1.0 | Ngăn exploding gradients |
 
 ---
@@ -454,14 +464,14 @@ $$\text{confidence} = \sigma(z_{\text{top-1}}) - \sigma(z_{\text{top-2}})$$
 
 | Metric | Giá trị | Ý nghĩa |
 |---|---|---|
-| **Overall Accuracy** | **91.77%** | 1037/1130 dự đoán chính xác |
-| **MRR** | **0.9533** | Đáp án đúng gần như luôn ở Top-1 hoặc Top-2 |
-| **Seen Accuracy** | **94.38%** | 818 samples thuộc 109 acronyms đã thấy khi train |
-| **Unseen Accuracy** | **84.94%** | 312 samples thuộc 26 acronyms **chưa từng thấy** khi train |
+| **Overall Accuracy** | **91.68%** | 1036/1130 dự đoán chính xác |
+| **MRR** | **0.9525** | Đáp án đúng gần như luôn ở Top-1 hoặc Top-2 |
+| **Seen Accuracy** | **94.50%** | 818 samples thuộc 109 acronyms đã thấy khi train |
+| **Unseen Accuracy** | **84.29%** | 312 samples thuộc 26 acronyms **chưa từng thấy** khi train |
 
 ### 6.2 Phân tích Zero-shot Generalization
 
-Con số **84.94% Unseen Accuracy** chứng minh Cross-Encoder thực sự hiểu ngữ nghĩa:
+Con số **84.29% Unseen Accuracy** chứng minh Cross-Encoder thực sự hiểu ngữ nghĩa:
 
 - Mô hình **chưa bao giờ** thấy 26 acronyms này trong training.
 - Nó chỉ dựa vào (1) ngữ cảnh xung quanh để hiểu ý nghĩa, và (2) semantic encoding của candidate expansion string.

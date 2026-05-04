@@ -1,0 +1,1981 @@
+{
+  "total_errors": 94,
+  "total_samples": 1130,
+  "error_rate": 8.32,
+  "errors": [
+    {
+      "idx": 13,
+      "acronym": "tn",
+      "gold": "tiểu não",
+      "predicted": "teo não",
+      "is_seen": true,
+      "top_scores": {
+        "thai nhi": -3.4027445316314697,
+        "thâm nhiễm": -3.2561745643615723,
+        "tiểu não": -3.2782235145568848,
+        "túi ngực": -3.3856120109558105,
+        "thủy ngân": -3.2488954067230225,
+        "teo não": -3.1363091468811035,
+        "tim ngực": -3.318290948867798
+      },
+      "margin": 0.11258625984191895
+    },
+    {
+      "idx": 30,
+      "acronym": "tn",
+      "gold": "tiểu não",
+      "predicted": "teo não",
+      "is_seen": true,
+      "top_scores": {
+        "thai nhi": -3.2382240295410156,
+        "thâm nhiễm": -3.241462230682373,
+        "tiểu não": -3.289635419845581,
+        "túi ngực": -3.34637451171875,
+        "thủy ngân": -3.228728771209717,
+        "teo não": -3.1039576530456543,
+        "tim ngực": -3.3070883750915527
+      },
+      "margin": 0.1247711181640625
+    },
+    {
+      "idx": 123,
+      "acronym": "th",
+      "gold": "tinh hoàn",
+      "predicted": "tín hiệu",
+      "is_seen": true,
+      "top_scores": {
+        "tín hiệu": -1.2064878940582275,
+        "thoái hóa": -3.240835666656494,
+        "tinh hoàn": -2.214745044708252,
+        "trường hợp": -3.324425220489502,
+        "tuần hoàn": -2.942918300628662
+      },
+      "margin": 1.0082571506500244
+    },
+    {
+      "idx": 137,
+      "acronym": "nv",
+      "gold": "ngoại vi",
+      "predicted": "nốt vôi",
+      "is_seen": true,
+      "top_scores": {
+        "núm vú": -3.3549861907958984,
+        "ngoại vi": -3.105921506881714,
+        "nốt vôi": 0.6321552395820618
+      },
+      "margin": 3.7380767464637756
+    },
+    {
+      "idx": 173,
+      "acronym": "kk",
+      "gold": "khoảng kẽ",
+      "predicted": "khe khớp",
+      "is_seen": true,
+      "top_scores": {
+        "kén khí": -3.306267261505127,
+        "khe khớp": 1.3294775485992432,
+        "khoảng kẽ": -1.38358473777771,
+        "kỳ kinh": -3.3149592876434326,
+        "khẩu kính": -3.026049852371216
+      },
+      "margin": 2.713062286376953
+    },
+    {
+      "idx": 196,
+      "acronym": "ct",
+      "gold": "cánh tay",
+      "predicted": "cột tủy",
+      "is_seen": true,
+      "top_scores": {
+        "cấu trúc": -3.2528610229492188,
+        "cạnh tim": -3.1680965423583984,
+        "cột tủy": 0.420209139585495,
+        "cánh tay": -3.379699230194092,
+        "cổ tay": -3.3853847980499268,
+        "cơ tim": -3.009986639022827,
+        "chấn thương": -3.2495510578155518
+      },
+      "margin": 3.430195778608322
+    },
+    {
+      "idx": 214,
+      "acronym": "đb",
+      "gold": "đáy buồng",
+      "predicted": "đường bụng",
+      "is_seen": true,
+      "top_scores": {
+        "đường bụng": 2.782449960708618,
+        "đáy buồng": 1.5159521102905273,
+        "đòn bên": -3.4798057079315186
+      },
+      "margin": 1.2664978504180908
+    },
+    {
+      "idx": 265,
+      "acronym": "pb",
+      "gold": "phân bố",
+      "predicted": "phân biệt",
+      "is_seen": true,
+      "top_scores": {
+        "phân biệt": 2.566998243331909,
+        "phân bố": -3.2994589805603027
+      },
+      "margin": 5.866457223892212
+    },
+    {
+      "idx": 269,
+      "acronym": "tm",
+      "gold": "túi mật",
+      "predicted": "tĩnh mạch",
+      "is_seen": true,
+      "top_scores": {
+        "tĩnh mạch": -2.8304710388183594,
+        "túi mật": -3.203859806060791,
+        "thành mạch": -3.160034656524658,
+        "thiếu máu": -3.2663733959198,
+        "tụ máu": -3.0855188369750977
+      },
+      "margin": 0.2550477981567383
+    },
+    {
+      "idx": 283,
+      "acronym": "mt",
+      "gold": "manh tràng",
+      "predicted": "mức thùy",
+      "is_seen": true,
+      "top_scores": {
+        "manh tràng": -3.0119974613189697,
+        "mang tai": -3.158994197845459,
+        "màng tim": -3.0986318588256836,
+        "mạch thận": -3.3546810150146484,
+        "mức thùy": -2.831604242324829
+      },
+      "margin": 0.18039321899414062
+    },
+    {
+      "idx": 311,
+      "acronym": "vh",
+      "gold": "vùng hố",
+      "predicted": "vôi hóa",
+      "is_seen": true,
+      "top_scores": {
+        "vôi hóa": 3.54760479927063,
+        "vùng hố": 3.355591058731079,
+        "vỏ hạch": 2.5985398292541504,
+        "vòm hoành": -1.646226406097412
+      },
+      "margin": 0.19201374053955078
+    },
+    {
+      "idx": 322,
+      "acronym": "qr",
+      "gold": "quanh rốn",
+      "predicted": "quai ruột",
+      "is_seen": true,
+      "top_scores": {
+        "quai ruột": 3.1119472980499268,
+        "quanh rốn": 2.8966028690338135
+      },
+      "margin": 0.21534442901611328
+    },
+    {
+      "idx": 325,
+      "acronym": "mđ",
+      "gold": "màng đệm",
+      "predicted": "mật độ",
+      "is_seen": true,
+      "top_scores": {
+        "mật độ": -0.10613946616649628,
+        "màng đệm": -3.4084436893463135
+      },
+      "margin": 3.302304223179817
+    },
+    {
+      "idx": 346,
+      "acronym": "ht",
+      "gold": "hình tim",
+      "predicted": "hoại tử",
+      "is_seen": true,
+      "top_scores": {
+        "hiện tại": -1.9498939514160156,
+        "hệ thống": -3.276442050933838,
+        "hình tim": -3.288102865219116,
+        "hố thận": -3.38931941986084,
+        "hoại tử": 0.4226227104663849,
+        "hình trụ": -3.3142318725585938,
+        "hiện tượng": -3.2244527339935303
+      },
+      "margin": 2.3725166618824005
+    },
+    {
+      "idx": 385,
+      "acronym": "cx",
+      "gold": "can xi",
+      "predicted": "chuỗi xung",
+      "is_seen": true,
+      "top_scores": {
+        "chuỗi xung": 3.3075404167175293,
+        "chất xám": 3.153790235519409,
+        "can xi": -3.16623854637146
+      },
+      "margin": 0.15375018119812012
+    },
+    {
+      "idx": 398,
+      "acronym": "kđ",
+      "gold": "khớp đùi",
+      "predicted": "khe đĩa",
+      "is_seen": true,
+      "top_scores": {
+        "khe đĩa": 0.49129432439804077,
+        "khớp đùi": -1.5101457834243774
+      },
+      "margin": 2.001440107822418
+    },
+    {
+      "idx": 405,
+      "acronym": "ht",
+      "gold": "hình tim",
+      "predicted": "hiện tại",
+      "is_seen": true,
+      "top_scores": {
+        "hiện tại": 2.6867713928222656,
+        "hệ thống": -3.118194103240967,
+        "hình tim": -3.191742420196533,
+        "hố thận": -3.342529058456421,
+        "hoại tử": -1.9246416091918945,
+        "hình trụ": -3.0742204189300537,
+        "hiện tượng": -3.2769010066986084
+      },
+      "margin": 4.61141300201416
+    },
+    {
+      "idx": 427,
+      "acronym": "bc",
+      "gold": "bề cao",
+      "predicted": "bánh chè",
+      "is_seen": true,
+      "top_scores": {
+        "bàn chân": -3.2526307106018066,
+        "bán cầu": -3.123163938522339,
+        "bánh chè": 1.8795524835586548,
+        "bề cao": -1.8229002952575684,
+        "bản chất": -2.994476795196533
+      },
+      "margin": 3.702452778816223
+    },
+    {
+      "idx": 451,
+      "acronym": "cc",
+      "gold": "cổ chân",
+      "predicted": "cẳng chân",
+      "is_seen": true,
+      "top_scores": {
+        "cổ chân": -2.9510011672973633,
+        "chiều cao": -3.3502438068389893,
+        "cẳng chân": -2.300093173980713,
+        "chủ chậu": -3.1767537593841553,
+        "cánh chậu": -2.5493459701538086
+      },
+      "margin": 0.2492527961730957
+    },
+    {
+      "idx": 458,
+      "acronym": "th",
+      "gold": "tín hiệu",
+      "predicted": "thoái hóa",
+      "is_seen": true,
+      "top_scores": {
+        "tín hiệu": -2.1321098804473877,
+        "thoái hóa": 2.2248153686523438,
+        "tinh hoàn": -2.965956687927246,
+        "trường hợp": -3.3082711696624756,
+        "tuần hoàn": -3.267888069152832
+      },
+      "margin": 4.3569252490997314
+    },
+    {
+      "idx": 482,
+      "acronym": "bm",
+      "gold": "bờ méo",
+      "predicted": "bề mặt",
+      "is_seen": true,
+      "top_scores": {
+        "bề mặt": 2.953490734100342,
+        "bùn mật": -3.174809455871582,
+        "bờ méo": -2.948087453842163
+      },
+      "margin": 5.901578187942505
+    },
+    {
+      "idx": 500,
+      "acronym": "bc",
+      "gold": "bàn chân",
+      "predicted": "bánh chè",
+      "is_seen": true,
+      "top_scores": {
+        "bàn chân": -2.9772942066192627,
+        "bán cầu": -3.222062587738037,
+        "bánh chè": -1.924159049987793,
+        "bề cao": -3.0907111167907715,
+        "bản chất": -3.1719424724578857
+      },
+      "margin": 1.0531351566314697
+    },
+    {
+      "idx": 527,
+      "acronym": "vđ",
+      "gold": "vùng đáy",
+      "predicted": "vòng đầu",
+      "is_seen": true,
+      "top_scores": {
+        "vòng đầu": 2.815972328186035,
+        "vùng đáy": 2.2095494270324707,
+        "vai đòn": -3.166802406311035
+      },
+      "margin": 0.6064229011535645
+    },
+    {
+      "idx": 567,
+      "acronym": "nd",
+      "gold": "nốt dạng",
+      "predicted": "nang dịch",
+      "is_seen": true,
+      "top_scores": {
+        "notch doppler": -3.4913294315338135,
+        "nhân dạng": -2.145636558532715,
+        "nang dịch": 2.201561689376831,
+        "nốt dạng": -3.3287508487701416,
+        "nội dung": -3.4523661136627197
+      },
+      "margin": 4.347198247909546
+    },
+    {
+      "idx": 571,
+      "acronym": "xl",
+      "gold": "xơ loại",
+      "predicted": "xâm lấn",
+      "is_seen": true,
+      "top_scores": {
+        "xơ loại": 3.0402183532714844,
+        "xâm lấn": 3.3030898571014404
+      },
+      "margin": 0.26287150382995605
+    },
+    {
+      "idx": 578,
+      "acronym": "mt",
+      "gold": "mạch thận",
+      "predicted": "manh tràng",
+      "is_seen": true,
+      "top_scores": {
+        "manh tràng": -0.48374953866004944,
+        "mang tai": -2.851271152496338,
+        "màng tim": -3.2590017318725586,
+        "mạch thận": -1.0306813716888428,
+        "mức thùy": -3.239992618560791
+      },
+      "margin": 0.5469318330287933
+    },
+    {
+      "idx": 588,
+      "acronym": "bc",
+      "gold": "bàn chân",
+      "predicted": "bánh chè",
+      "is_seen": true,
+      "top_scores": {
+        "bàn chân": -1.457517385482788,
+        "bán cầu": -3.008064031600952,
+        "bánh chè": 1.849445104598999,
+        "bề cao": -3.038126230239868,
+        "bản chất": -3.0323636531829834
+      },
+      "margin": 3.306962490081787
+    },
+    {
+      "idx": 608,
+      "acronym": "nx",
+      "gold": "nhận xét",
+      "predicted": "nhân xơ",
+      "is_seen": true,
+      "top_scores": {
+        "nhịp xoang": -3.154902458190918,
+        "nhận xét": -2.8873629570007324,
+        "nhân xơ": 2.562201976776123,
+        "nội xốp": -3.233704090118408,
+        "nang xương": -3.2196438312530518
+      },
+      "margin": 5.4495649337768555
+    },
+    {
+      "idx": 612,
+      "acronym": "sc",
+      "gold": "sức căng",
+      "predicted": "sụn chêm",
+      "is_seen": true,
+      "top_scores": {
+        "sức căng": -0.6834847927093506,
+        "sụn chêm": 3.096998453140259
+      },
+      "margin": 3.7804832458496094
+    },
+    {
+      "idx": 624,
+      "acronym": "tlt",
+      "gold": "tiền liệt tuyến",
+      "predicted": "trọng lượng thai",
+      "is_seen": true,
+      "top_scores": {
+        "trọng lượng thai": -3.028334379196167,
+        "tiền liệt tuyến": -3.2821099758148193
+      },
+      "margin": 0.25377559661865234
+    },
+    {
+      "idx": 626,
+      "acronym": "tv",
+      "gold": "thoát vị",
+      "predicted": "tủy vỏ",
+      "is_seen": true,
+      "top_scores": {
+        "tuyến vú": -3.3671865463256836,
+        "tủy vỏ": -0.9952036142349243,
+        "thoát vị": -3.220167398452759
+      },
+      "margin": 2.2249637842178345
+    },
+    {
+      "idx": 639,
+      "acronym": "qr",
+      "gold": "quanh rốn",
+      "predicted": "quai ruột",
+      "is_seen": true,
+      "top_scores": {
+        "quai ruột": 2.8177833557128906,
+        "quanh rốn": -3.2894816398620605
+      },
+      "margin": 6.107264995574951
+    },
+    {
+      "idx": 641,
+      "acronym": "lm",
+      "gold": "lớp mỡ",
+      "predicted": "lòng mạch",
+      "is_seen": true,
+      "top_scores": {
+        "lòng mạch": 3.2433078289031982,
+        "lớp mỡ": -3.076749801635742
+      },
+      "margin": 6.32005763053894
+    },
+    {
+      "idx": 657,
+      "acronym": "tn",
+      "gold": "tiểu não",
+      "predicted": "teo não",
+      "is_seen": true,
+      "top_scores": {
+        "thai nhi": -3.3130407333374023,
+        "thâm nhiễm": -3.1727631092071533,
+        "tiểu não": -3.186657667160034,
+        "túi ngực": -3.2798449993133545,
+        "thủy ngân": -3.2120232582092285,
+        "teo não": -3.0698113441467285,
+        "tim ngực": -3.2216739654541016
+      },
+      "margin": 0.1029517650604248
+    },
+    {
+      "idx": 701,
+      "acronym": "pn",
+      "gold": "phù não",
+      "predicted": "phù nề",
+      "is_seen": true,
+      "top_scores": {
+        "phế nang": -3.200876474380493,
+        "phù nề": 2.366199016571045,
+        "phù não": 2.2957115173339844
+      },
+      "margin": 0.07048749923706055
+    },
+    {
+      "idx": 702,
+      "acronym": "th",
+      "gold": "thoái hóa",
+      "predicted": "tín hiệu",
+      "is_seen": true,
+      "top_scores": {
+        "tín hiệu": 1.1742324829101562,
+        "thoái hóa": -2.953007221221924,
+        "tinh hoàn": -3.020102024078369,
+        "trường hợp": -3.0771584510803223,
+        "tuần hoàn": -3.063643455505371
+      },
+      "margin": 4.12723970413208
+    },
+    {
+      "idx": 737,
+      "acronym": "đc",
+      "gold": "đoạn cuối",
+      "predicted": "đường cong",
+      "is_seen": true,
+      "top_scores": {
+        "đường cong": -2.664766311645508,
+        "đoạn cuối": -2.794577121734619
+      },
+      "margin": 0.12981081008911133
+    },
+    {
+      "idx": 761,
+      "acronym": "đđ",
+      "gold": "đông đặc",
+      "predicted": "đĩa đệm",
+      "is_seen": true,
+      "top_scores": {
+        "đông đặc": 1.1234936714172363,
+        "đầu đùi": -3.367138385772705,
+        "đĩa đệm": 2.530808687210083,
+        "đặc điểm": -3.000324249267578
+      },
+      "margin": 1.4073150157928467
+    },
+    {
+      "idx": 763,
+      "acronym": "kg",
+      "gold": "khớp gối",
+      "predicted": "khoang gan",
+      "is_seen": true,
+      "top_scores": {
+        "khớp gối": -3.2959885597229004,
+        "khoang gan": -3.183846950531006
+      },
+      "margin": 0.11214160919189453
+    },
+    {
+      "idx": 768,
+      "acronym": "cc",
+      "gold": "cổ chân",
+      "predicted": "cẳng chân",
+      "is_seen": true,
+      "top_scores": {
+        "cổ chân": -0.3717438280582428,
+        "chiều cao": -3.3771939277648926,
+        "cẳng chân": 2.055720806121826,
+        "chủ chậu": -3.2772412300109863,
+        "cánh chậu": -3.409363031387329
+      },
+      "margin": 2.427464634180069
+    },
+    {
+      "idx": 782,
+      "acronym": "bm",
+      "gold": "bề mặt",
+      "predicted": "bùn mật",
+      "is_seen": true,
+      "top_scores": {
+        "bề mặt": -2.3046576976776123,
+        "bùn mật": -1.499082088470459,
+        "bờ méo": -2.949465036392212
+      },
+      "margin": 0.8055756092071533
+    },
+    {
+      "idx": 786,
+      "acronym": "ct",
+      "gold": "cánh tay",
+      "predicted": "cấu trúc",
+      "is_seen": true,
+      "top_scores": {
+        "cấu trúc": -0.7184898257255554,
+        "cạnh tim": -3.3143835067749023,
+        "cột tủy": -3.3784477710723877,
+        "cánh tay": -3.3125343322753906,
+        "cổ tay": -3.3201122283935547,
+        "cơ tim": -3.0505406856536865,
+        "chấn thương": -3.316465377807617
+      },
+      "margin": 2.332050859928131
+    },
+    {
+      "idx": 788,
+      "acronym": "sl",
+      "gold": "sinh lý",
+      "predicted": "số lượng",
+      "is_seen": true,
+      "top_scores": {
+        "số lượng": 3.135890483856201,
+        "sinh lý": 2.8900749683380127
+      },
+      "margin": 0.24581551551818848
+    },
+    {
+      "idx": 796,
+      "acronym": "tn",
+      "gold": "tiểu não",
+      "predicted": "teo não",
+      "is_seen": true,
+      "top_scores": {
+        "thai nhi": -3.343308925628662,
+        "thâm nhiễm": -3.1681888103485107,
+        "tiểu não": -2.649294376373291,
+        "túi ngực": -3.3930892944335938,
+        "thủy ngân": -3.2596421241760254,
+        "teo não": -2.589582920074463,
+        "tim ngực": -3.3201117515563965
+      },
+      "margin": 0.059711456298828125
+    },
+    {
+      "idx": 803,
+      "acronym": "rr",
+      "gold": "rõ rệt",
+      "predicted": "rải rác",
+      "is_seen": true,
+      "top_scores": {
+        "rải rác": 3.3067266941070557,
+        "rõ rệt": -2.930100202560425
+      },
+      "margin": 6.2368268966674805
+    },
+    {
+      "idx": 821,
+      "acronym": "ns",
+      "gold": "nang sau",
+      "predicted": "nội soi",
+      "is_seen": false,
+      "top_scores": {
+        "ngực sau": -3.197983503341675,
+        "nang sau": -3.134124755859375,
+        "nội soi": 2.513636350631714
+      },
+      "margin": 5.647761106491089
+    },
+    {
+      "idx": 824,
+      "acronym": "lc",
+      "gold": "lồi cầu",
+      "predicted": "lớp cơ",
+      "is_seen": false,
+      "top_scores": {
+        "lớp cơ": 2.2819318771362305,
+        "lồi cầu": -3.075702428817749
+      },
+      "margin": 5.3576343059539795
+    },
+    {
+      "idx": 842,
+      "acronym": "ns",
+      "gold": "ngực sau",
+      "predicted": "nang sau",
+      "is_seen": false,
+      "top_scores": {
+        "ngực sau": -2.1306896209716797,
+        "nang sau": -0.3480125665664673,
+        "nội soi": -3.115832805633545
+      },
+      "margin": 1.7826770544052124
+    },
+    {
+      "idx": 846,
+      "acronym": "bd",
+      "gold": "bầu dục",
+      "predicted": "bên dưới",
+      "is_seen": false,
+      "top_scores": {
+        "biparietal diameter": -2.0686044692993164,
+        "bề dày": -0.6585886478424072,
+        "bầu dục": -3.2316854000091553,
+        "biến dạng": -1.1763148307800293,
+        "bên dưới": 0.4031584560871124
+      },
+      "margin": 1.0617471039295197
+    },
+    {
+      "idx": 862,
+      "acronym": "lc",
+      "gold": "lồi cầu",
+      "predicted": "lớp cơ",
+      "is_seen": false,
+      "top_scores": {
+        "lớp cơ": -2.944347858428955,
+        "lồi cầu": -3.0823304653167725
+      },
+      "margin": 0.13798260688781738
+    },
+    {
+      "idx": 863,
+      "acronym": "tb",
+      "gold": "thành bụng",
+      "predicted": "toàn bộ",
+      "is_seen": false,
+      "top_scores": {
+        "toàn bộ": -1.2837733030319214,
+        "thành bụng": -3.38034725189209,
+        "thông bào": -3.3047215938568115
+      },
+      "margin": 2.02094829082489
+    },
+    {
+      "idx": 872,
+      "acronym": "lc",
+      "gold": "lồi cầu",
+      "predicted": "lớp cơ",
+      "is_seen": false,
+      "top_scores": {
+        "lớp cơ": -1.864577054977417,
+        "lồi cầu": -3.0219833850860596
+      },
+      "margin": 1.1574063301086426
+    },
+    {
+      "idx": 874,
+      "acronym": "tb",
+      "gold": "thành bụng",
+      "predicted": "toàn bộ",
+      "is_seen": false,
+      "top_scores": {
+        "toàn bộ": -1.3907697200775146,
+        "thành bụng": -3.409727096557617,
+        "thông bào": -3.201793670654297
+      },
+      "margin": 1.8110239505767822
+    },
+    {
+      "idx": 876,
+      "acronym": "xqt",
+      "gold": "xương quay trái",
+      "predicted": "xung quanh tuyến",
+      "is_seen": false,
+      "top_scores": {
+        "xương quay trái": 3.0662803649902344,
+        "xung quanh tuyến": 3.069023847579956
+      },
+      "margin": 0.0027434825897216797
+    },
+    {
+      "idx": 881,
+      "acronym": "lc",
+      "gold": "lớp cơ",
+      "predicted": "lồi cầu",
+      "is_seen": false,
+      "top_scores": {
+        "lớp cơ": -3.1183276176452637,
+        "lồi cầu": -3.0813369750976562
+      },
+      "margin": 0.03699064254760742
+    },
+    {
+      "idx": 883,
+      "acronym": "np",
+      "gold": "nghiệm pháp",
+      "predicted": "núm phình",
+      "is_seen": false,
+      "top_scores": {
+        "nghiệm pháp": -3.3005807399749756,
+        "nền phổi": -2.881105899810791,
+        "núm phình": -2.4520199298858643
+      },
+      "margin": 0.42908596992492676
+    },
+    {
+      "idx": 885,
+      "acronym": "đt",
+      "gold": "đuôi tụy",
+      "predicted": "đại tràng",
+      "is_seen": false,
+      "top_scores": {
+        "đại tràng": 3.0183157920837402,
+        "đài thận": 1.0301131010055542,
+        "đồng tâm": -3.0778379440307617,
+        "đuôi tụy": 0.7249722480773926,
+        "đồi thị": -3.0395474433898926,
+        "độ tuổi": -3.230398654937744,
+        "điện tim": -3.2601940631866455
+      },
+      "margin": 1.988202691078186
+    },
+    {
+      "idx": 887,
+      "acronym": "tb",
+      "gold": "thông bào",
+      "predicted": "toàn bộ",
+      "is_seen": false,
+      "top_scores": {
+        "toàn bộ": -2.9517006874084473,
+        "thành bụng": -3.374269962310791,
+        "thông bào": -3.209136962890625
+      },
+      "margin": 0.25743627548217773
+    },
+    {
+      "idx": 891,
+      "acronym": "kd",
+      "gold": "khối dạng",
+      "predicted": "kẽ dạng",
+      "is_seen": false,
+      "top_scores": {
+        "khối dạng": -3.2102510929107666,
+        "kẽ dạng": -2.989227771759033,
+        "khoảng doppler": -3.405226469039917
+      },
+      "margin": 0.2210233211517334
+    },
+    {
+      "idx": 896,
+      "acronym": "lc",
+      "gold": "lồi cầu",
+      "predicted": "lớp cơ",
+      "is_seen": false,
+      "top_scores": {
+        "lớp cơ": 3.1972203254699707,
+        "lồi cầu": -3.0695254802703857
+      },
+      "margin": 6.2667458057403564
+    },
+    {
+      "idx": 903,
+      "acronym": "lc",
+      "gold": "lồi cầu",
+      "predicted": "lớp cơ",
+      "is_seen": false,
+      "top_scores": {
+        "lớp cơ": -2.6408309936523438,
+        "lồi cầu": -3.0930848121643066
+      },
+      "margin": 0.4522538185119629
+    },
+    {
+      "idx": 911,
+      "acronym": "tđ",
+      "gold": "thân đốt",
+      "predicted": "tầng đĩa",
+      "is_seen": false,
+      "top_scores": {
+        "thân đốt": 2.752134323120117,
+        "thời điểm": -3.250807046890259,
+        "thùy đỉnh": -3.412304401397705,
+        "tầng đĩa": 3.3735246658325195,
+        "tốc độ": -3.2926530838012695
+      },
+      "margin": 0.6213903427124023
+    },
+    {
+      "idx": 915,
+      "acronym": "kd",
+      "gold": "kẽ dạng",
+      "predicted": "khối dạng",
+      "is_seen": false,
+      "top_scores": {
+        "khối dạng": -1.8627997636795044,
+        "kẽ dạng": -2.572253704071045,
+        "khoảng doppler": -3.294776678085327
+      },
+      "margin": 0.7094539403915405
+    },
+    {
+      "idx": 920,
+      "acronym": "ns",
+      "gold": "ngực sau",
+      "predicted": "nang sau",
+      "is_seen": false,
+      "top_scores": {
+        "ngực sau": -3.049696922302246,
+        "nang sau": 0.7286814451217651,
+        "nội soi": -3.3471078872680664
+      },
+      "margin": 3.7783783674240112
+    },
+    {
+      "idx": 935,
+      "acronym": "ts",
+      "gold": "tăng sinh",
+      "predicted": "tần số",
+      "is_seen": false,
+      "top_scores": {
+        "tần số": -1.7435226440429688,
+        "tăng sinh": -2.187277317047119,
+        "tiền sử": -3.291472911834717,
+        "trị số": -3.0333800315856934
+      },
+      "margin": 0.4437546730041504
+    },
+    {
+      "idx": 945,
+      "acronym": "ts",
+      "gold": "tăng sinh",
+      "predicted": "trị số",
+      "is_seen": false,
+      "top_scores": {
+        "tần số": -3.3052592277526855,
+        "tăng sinh": -3.268737316131592,
+        "tiền sử": -3.368931293487549,
+        "trị số": -3.22198748588562
+      },
+      "margin": 0.04674983024597168
+    },
+    {
+      "idx": 953,
+      "acronym": "lc",
+      "gold": "lồi cầu",
+      "predicted": "lớp cơ",
+      "is_seen": false,
+      "top_scores": {
+        "lớp cơ": 2.3788340091705322,
+        "lồi cầu": -3.0109970569610596
+      },
+      "margin": 5.389831066131592
+    },
+    {
+      "idx": 954,
+      "acronym": "ôt",
+      "gold": "ống tuyến",
+      "predicted": "ống tai",
+      "is_seen": false,
+      "top_scores": {
+        "ống tuyến": -3.3534882068634033,
+        "ống tụy": -3.382584810256958,
+        "ống tai": -3.285749673843384
+      },
+      "margin": 0.06773853302001953
+    },
+    {
+      "idx": 957,
+      "acronym": "bd",
+      "gold": "bầu dục",
+      "predicted": "bề dày",
+      "is_seen": false,
+      "top_scores": {
+        "biparietal diameter": -1.9645016193389893,
+        "bề dày": 0.3655738830566406,
+        "bầu dục": -3.1591806411743164,
+        "biến dạng": -2.9771728515625,
+        "bên dưới": -0.5196475386619568
+      },
+      "margin": 0.8852214217185974
+    },
+    {
+      "idx": 958,
+      "acronym": "đt",
+      "gold": "đồng tâm",
+      "predicted": "đại tràng",
+      "is_seen": false,
+      "top_scores": {
+        "đại tràng": 3.152287483215332,
+        "đài thận": -1.529953122138977,
+        "đồng tâm": -1.974502682685852,
+        "đuôi tụy": -3.0517964363098145,
+        "đồi thị": -2.5884060859680176,
+        "độ tuổi": -3.258068561553955,
+        "điện tim": -2.9022932052612305
+      },
+      "margin": 4.682240605354309
+    },
+    {
+      "idx": 979,
+      "acronym": "tb",
+      "gold": "thông bào",
+      "predicted": "toàn bộ",
+      "is_seen": false,
+      "top_scores": {
+        "toàn bộ": -0.43654072284698486,
+        "thành bụng": -1.7865526676177979,
+        "thông bào": -3.3412883281707764
+      },
+      "margin": 1.350011944770813
+    },
+    {
+      "idx": 980,
+      "acronym": "bd",
+      "gold": "bầu dục",
+      "predicted": "biparietal diameter",
+      "is_seen": false,
+      "top_scores": {
+        "biparietal diameter": -1.9895992279052734,
+        "bề dày": -2.8265762329101562,
+        "bầu dục": -3.163985252380371,
+        "biến dạng": -3.104853391647339,
+        "bên dưới": -2.417485237121582
+      },
+      "margin": 0.4278860092163086
+    },
+    {
+      "idx": 981,
+      "acronym": "đt",
+      "gold": "đồi thị",
+      "predicted": "đồng tâm",
+      "is_seen": false,
+      "top_scores": {
+        "đại tràng": -0.654877781867981,
+        "đài thận": -3.312108278274536,
+        "đồng tâm": 3.2337841987609863,
+        "đuôi tụy": -3.271350383758545,
+        "đồi thị": -2.743468761444092,
+        "độ tuổi": -3.175666570663452,
+        "điện tim": -3.266770362854004
+      },
+      "margin": 3.8886619806289673
+    },
+    {
+      "idx": 990,
+      "acronym": "ns",
+      "gold": "ngực sau",
+      "predicted": "nang sau",
+      "is_seen": false,
+      "top_scores": {
+        "ngực sau": -3.1800994873046875,
+        "nang sau": 1.365384578704834,
+        "nội soi": -3.3719544410705566
+      },
+      "margin": 4.5454840660095215
+    },
+    {
+      "idx": 994,
+      "acronym": "bd",
+      "gold": "bầu dục",
+      "predicted": "bên dưới",
+      "is_seen": false,
+      "top_scores": {
+        "biparietal diameter": -2.1492199897766113,
+        "bề dày": 2.483814239501953,
+        "bầu dục": -3.32224178314209,
+        "biến dạng": -1.234938621520996,
+        "bên dưới": 2.81318998336792
+      },
+      "margin": 0.3293757438659668
+    },
+    {
+      "idx": 998,
+      "acronym": "lc",
+      "gold": "lồi cầu",
+      "predicted": "lớp cơ",
+      "is_seen": false,
+      "top_scores": {
+        "lớp cơ": 2.392408847808838,
+        "lồi cầu": -2.237196683883667
+      },
+      "margin": 4.629605531692505
+    },
+    {
+      "idx": 1006,
+      "acronym": "ts",
+      "gold": "tăng sinh",
+      "predicted": "tần số",
+      "is_seen": false,
+      "top_scores": {
+        "tần số": -1.4884498119354248,
+        "tăng sinh": -3.290933847427368,
+        "tiền sử": -3.356290578842163,
+        "trị số": -3.1423592567443848
+      },
+      "margin": 1.65390944480896
+    },
+    {
+      "idx": 1017,
+      "acronym": "kd",
+      "gold": "khối dạng",
+      "predicted": "kẽ dạng",
+      "is_seen": false,
+      "top_scores": {
+        "khối dạng": -3.069711923599243,
+        "kẽ dạng": -2.9010777473449707,
+        "khoảng doppler": -3.254634141921997
+      },
+      "margin": 0.16863417625427246
+    },
+    {
+      "idx": 1023,
+      "acronym": "np",
+      "gold": "nghiệm pháp",
+      "predicted": "nền phổi",
+      "is_seen": false,
+      "top_scores": {
+        "nghiệm pháp": -3.131721019744873,
+        "nền phổi": -2.7197420597076416,
+        "núm phình": -3.507782459259033
+      },
+      "margin": 0.41197896003723145
+    },
+    {
+      "idx": 1028,
+      "acronym": "bd",
+      "gold": "bầu dục",
+      "predicted": "bên dưới",
+      "is_seen": false,
+      "top_scores": {
+        "biparietal diameter": -2.4112918376922607,
+        "bề dày": 1.0475616455078125,
+        "bầu dục": -3.3409008979797363,
+        "biến dạng": -1.8282454013824463,
+        "bên dưới": 2.406134605407715
+      },
+      "margin": 1.3585729598999023
+    },
+    {
+      "idx": 1033,
+      "acronym": "bd",
+      "gold": "bề dày",
+      "predicted": "biparietal diameter",
+      "is_seen": false,
+      "top_scores": {
+        "biparietal diameter": -1.7015515565872192,
+        "bề dày": -2.022951126098633,
+        "bầu dục": -3.273831605911255,
+        "biến dạng": -3.143914222717285,
+        "bên dưới": -3.164973258972168
+      },
+      "margin": 0.3213995695114136
+    },
+    {
+      "idx": 1035,
+      "acronym": "tb",
+      "gold": "thành bụng",
+      "predicted": "toàn bộ",
+      "is_seen": false,
+      "top_scores": {
+        "toàn bộ": -2.9435219764709473,
+        "thành bụng": -3.4403316974639893,
+        "thông bào": -3.2681784629821777
+      },
+      "margin": 0.32465648651123047
+    },
+    {
+      "idx": 1038,
+      "acronym": "vt",
+      "gold": "vị trí",
+      "predicted": "vỏ thận",
+      "is_seen": false,
+      "top_scores": {
+        "vị trí": 2.978058099746704,
+        "vòi trứng": -3.324988842010498,
+        "vận tốc": -0.5050296783447266,
+        "vỏ thận": 3.1833128929138184,
+        "van tim": -3.3229780197143555
+      },
+      "margin": 0.20525479316711426
+    },
+    {
+      "idx": 1048,
+      "acronym": "xh",
+      "gold": "xu hướng",
+      "predicted": "xoang hàm",
+      "is_seen": false,
+      "top_scores": {
+        "xơ hóa": -2.7084927558898926,
+        "xoang hàm": 3.169949769973755,
+        "xu hướng": -2.672581195831299,
+        "xuất huyết": -2.9756078720092773
+      },
+      "margin": 5.842530965805054
+    },
+    {
+      "idx": 1050,
+      "acronym": "lc",
+      "gold": "lồi cầu",
+      "predicted": "lớp cơ",
+      "is_seen": false,
+      "top_scores": {
+        "lớp cơ": -2.164975166320801,
+        "lồi cầu": -3.1055164337158203
+      },
+      "margin": 0.9405412673950195
+    },
+    {
+      "idx": 1052,
+      "acronym": "ns",
+      "gold": "ngực sau",
+      "predicted": "nang sau",
+      "is_seen": false,
+      "top_scores": {
+        "ngực sau": -3.0921435356140137,
+        "nang sau": -1.8720624446868896,
+        "nội soi": -3.111420154571533
+      },
+      "margin": 1.220081090927124
+    },
+    {
+      "idx": 1071,
+      "acronym": "tb",
+      "gold": "thành bụng",
+      "predicted": "toàn bộ",
+      "is_seen": false,
+      "top_scores": {
+        "toàn bộ": -2.473370313644409,
+        "thành bụng": -3.1015501022338867,
+        "thông bào": -3.2132012844085693
+      },
+      "margin": 0.6281797885894775
+    },
+    {
+      "idx": 1087,
+      "acronym": "bd",
+      "gold": "bầu dục",
+      "predicted": "bề dày",
+      "is_seen": false,
+      "top_scores": {
+        "biparietal diameter": -0.24769306182861328,
+        "bề dày": 2.026228666305542,
+        "bầu dục": -3.2258310317993164,
+        "biến dạng": -2.8315982818603516,
+        "bên dưới": 1.7059513330459595
+      },
+      "margin": 0.3202773332595825
+    },
+    {
+      "idx": 1088,
+      "acronym": "lc",
+      "gold": "lồi cầu",
+      "predicted": "lớp cơ",
+      "is_seen": false,
+      "top_scores": {
+        "lớp cơ": 0.26097169518470764,
+        "lồi cầu": -2.935105323791504
+      },
+      "margin": 3.1960770189762115
+    },
+    {
+      "idx": 1092,
+      "acronym": "bn",
+      "gold": "bên ngoài",
+      "predicted": "bệnh nhân",
+      "is_seen": false,
+      "top_scores": {
+        "bệnh nhân": -3.140504837036133,
+        "bên ngoài": -3.251016616821289
+      },
+      "margin": 0.11051177978515625
+    },
+    {
+      "idx": 1093,
+      "acronym": "bd",
+      "gold": "bầu dục",
+      "predicted": "bên dưới",
+      "is_seen": false,
+      "top_scores": {
+        "biparietal diameter": -1.5475263595581055,
+        "bề dày": -1.3783639669418335,
+        "bầu dục": -3.246499538421631,
+        "biến dạng": 0.7589672803878784,
+        "bên dưới": 2.4154465198516846
+      },
+      "margin": 1.6564792394638062
+    },
+    {
+      "idx": 1101,
+      "acronym": "tb",
+      "gold": "thành bụng",
+      "predicted": "toàn bộ",
+      "is_seen": false,
+      "top_scores": {
+        "toàn bộ": -3.007826566696167,
+        "thành bụng": -3.423314094543457,
+        "thông bào": -3.349088191986084
+      },
+      "margin": 0.341261625289917
+    },
+    {
+      "idx": 1105,
+      "acronym": "bd",
+      "gold": "bầu dục",
+      "predicted": "bên dưới",
+      "is_seen": false,
+      "top_scores": {
+        "biparietal diameter": -2.7841148376464844,
+        "bề dày": -0.7935428619384766,
+        "bầu dục": -3.207761764526367,
+        "biến dạng": -3.1418874263763428,
+        "bên dưới": 2.023233652114868
+      },
+      "margin": 2.8167765140533447
+    },
+    {
+      "idx": 1126,
+      "acronym": "ns",
+      "gold": "nang sau",
+      "predicted": "nội soi",
+      "is_seen": false,
+      "top_scores": {
+        "ngực sau": -3.1705706119537354,
+        "nang sau": -3.132990598678589,
+        "nội soi": 2.400322675704956
+      },
+      "margin": 5.533313274383545
+    }
+  ],
+  "per_acronym": {
+    "lc": {
+      "total": 12,
+      "correct": 2,
+      "accuracy": 16.67
+    },
+    "bd": {
+      "total": 12,
+      "correct": 3,
+      "accuracy": 25.0
+    },
+    "tb": {
+      "total": 12,
+      "correct": 5,
+      "accuracy": 41.67
+    },
+    "tn": {
+      "total": 8,
+      "correct": 4,
+      "accuracy": 50.0
+    },
+    "bm": {
+      "total": 4,
+      "correct": 2,
+      "accuracy": 50.0
+    },
+    "ns": {
+      "total": 12,
+      "correct": 6,
+      "accuracy": 50.0
+    },
+    "bc": {
+      "total": 8,
+      "correct": 5,
+      "accuracy": 62.5
+    },
+    "pb": {
+      "total": 3,
+      "correct": 2,
+      "accuracy": 66.67
+    },
+    "nd": {
+      "total": 3,
+      "correct": 2,
+      "accuracy": 66.67
+    },
+    "cc": {
+      "total": 6,
+      "correct": 4,
+      "accuracy": 66.67
+    },
+    "ht": {
+      "total": 7,
+      "correct": 5,
+      "accuracy": 71.43
+    },
+    "mt": {
+      "total": 7,
+      "correct": 5,
+      "accuracy": 71.43
+    },
+    "ct": {
+      "total": 7,
+      "correct": 5,
+      "accuracy": 71.43
+    },
+    "tm": {
+      "total": 4,
+      "correct": 3,
+      "accuracy": 75.0
+    },
+    "kd": {
+      "total": 12,
+      "correct": 9,
+      "accuracy": 75.0
+    },
+    "ts": {
+      "total": 12,
+      "correct": 9,
+      "accuracy": 75.0
+    },
+    "đt": {
+      "total": 12,
+      "correct": 9,
+      "accuracy": 75.0
+    },
+    "th": {
+      "total": 13,
+      "correct": 10,
+      "accuracy": 76.92
+    },
+    "kk": {
+      "total": 5,
+      "correct": 4,
+      "accuracy": 80.0
+    },
+    "tlt": {
+      "total": 5,
+      "correct": 4,
+      "accuracy": 80.0
+    },
+    "cx": {
+      "total": 6,
+      "correct": 5,
+      "accuracy": 83.33
+    },
+    "xl": {
+      "total": 6,
+      "correct": 5,
+      "accuracy": 83.33
+    },
+    "np": {
+      "total": 12,
+      "correct": 10,
+      "accuracy": 83.33
+    },
+    "qr": {
+      "total": 13,
+      "correct": 11,
+      "accuracy": 84.62
+    },
+    "pn": {
+      "total": 7,
+      "correct": 6,
+      "accuracy": 85.71
+    },
+    "kđ": {
+      "total": 7,
+      "correct": 6,
+      "accuracy": 85.71
+    },
+    "lm": {
+      "total": 7,
+      "correct": 6,
+      "accuracy": 85.71
+    },
+    "sl": {
+      "total": 7,
+      "correct": 6,
+      "accuracy": 85.71
+    },
+    "rr": {
+      "total": 8,
+      "correct": 7,
+      "accuracy": 87.5
+    },
+    "vđ": {
+      "total": 8,
+      "correct": 7,
+      "accuracy": 87.5
+    },
+    "nx": {
+      "total": 8,
+      "correct": 7,
+      "accuracy": 87.5
+    },
+    "mđ": {
+      "total": 8,
+      "correct": 7,
+      "accuracy": 87.5
+    },
+    "đb": {
+      "total": 8,
+      "correct": 7,
+      "accuracy": 87.5
+    },
+    "kg": {
+      "total": 10,
+      "correct": 9,
+      "accuracy": 90.0
+    },
+    "nv": {
+      "total": 10,
+      "correct": 9,
+      "accuracy": 90.0
+    },
+    "đđ": {
+      "total": 10,
+      "correct": 9,
+      "accuracy": 90.0
+    },
+    "đc": {
+      "total": 10,
+      "correct": 9,
+      "accuracy": 90.0
+    },
+    "tv": {
+      "total": 11,
+      "correct": 10,
+      "accuracy": 90.91
+    },
+    "sc": {
+      "total": 11,
+      "correct": 10,
+      "accuracy": 90.91
+    },
+    "vh": {
+      "total": 12,
+      "correct": 11,
+      "accuracy": 91.67
+    },
+    "tđ": {
+      "total": 12,
+      "correct": 11,
+      "accuracy": 91.67
+    },
+    "ôt": {
+      "total": 12,
+      "correct": 11,
+      "accuracy": 91.67
+    },
+    "xh": {
+      "total": 12,
+      "correct": 11,
+      "accuracy": 91.67
+    },
+    "bn": {
+      "total": 12,
+      "correct": 11,
+      "accuracy": 91.67
+    },
+    "vt": {
+      "total": 12,
+      "correct": 11,
+      "accuracy": 91.67
+    },
+    "xqt": {
+      "total": 12,
+      "correct": 11,
+      "accuracy": 91.67
+    },
+    "kh": {
+      "total": 8,
+      "correct": 8,
+      "accuracy": 100.0
+    },
+    "tq": {
+      "total": 6,
+      "correct": 6,
+      "accuracy": 100.0
+    },
+    "bx": {
+      "total": 11,
+      "correct": 11,
+      "accuracy": 100.0
+    },
+    "gđ": {
+      "total": 14,
+      "correct": 14,
+      "accuracy": 100.0
+    },
+    "rt": {
+      "total": 10,
+      "correct": 10,
+      "accuracy": 100.0
+    },
+    "pg": {
+      "total": 8,
+      "correct": 8,
+      "accuracy": 100.0
+    },
+    "tst": {
+      "total": 3,
+      "correct": 3,
+      "accuracy": 100.0
+    },
+    "nt": {
+      "total": 4,
+      "correct": 4,
+      "accuracy": 100.0
+    },
+    "hs": {
+      "total": 8,
+      "correct": 8,
+      "accuracy": 100.0
+    },
+    "xt": {
+      "total": 9,
+      "correct": 9,
+      "accuracy": 100.0
+    },
+    "kt": {
+      "total": 8,
+      "correct": 8,
+      "accuracy": 100.0
+    },
+    "vx": {
+      "total": 8,
+      "correct": 8,
+      "accuracy": 100.0
+    },
+    "bt": {
+      "total": 7,
+      "correct": 7,
+      "accuracy": 100.0
+    },
+    "md": {
+      "total": 8,
+      "correct": 8,
+      "accuracy": 100.0
+    },
+    "cn": {
+      "total": 7,
+      "correct": 7,
+      "accuracy": 100.0
+    },
+    "bk": {
+      "total": 8,
+      "correct": 8,
+      "accuracy": 100.0
+    },
+    "đmt": {
+      "total": 8,
+      "correct": 8,
+      "accuracy": 100.0
+    },
+    "đx": {
+      "total": 7,
+      "correct": 7,
+      "accuracy": 100.0
+    },
+    "pc": {
+      "total": 11,
+      "correct": 11,
+      "accuracy": 100.0
+    },
+    "vk": {
+      "total": 9,
+      "correct": 9,
+      "accuracy": 100.0
+    },
+    "mn": {
+      "total": 9,
+      "correct": 9,
+      "accuracy": 100.0
+    },
+    "dv": {
+      "total": 3,
+      "correct": 3,
+      "accuracy": 100.0
+    },
+    "dl": {
+      "total": 6,
+      "correct": 6,
+      "accuracy": 100.0
+    },
+    "cđ": {
+      "total": 4,
+      "correct": 4,
+      "accuracy": 100.0
+    },
+    "hm": {
+      "total": 7,
+      "correct": 7,
+      "accuracy": 100.0
+    },
+    "dt": {
+      "total": 8,
+      "correct": 8,
+      "accuracy": 100.0
+    },
+    "ch": {
+      "total": 11,
+      "correct": 11,
+      "accuracy": 100.0
+    },
+    "pd": {
+      "total": 10,
+      "correct": 10,
+      "accuracy": 100.0
+    },
+    "kc": {
+      "total": 11,
+      "correct": 11,
+      "accuracy": 100.0
+    },
+    "kv": {
+      "total": 6,
+      "correct": 6,
+      "accuracy": 100.0
+    },
+    "dx": {
+      "total": 6,
+      "correct": 6,
+      "accuracy": 100.0
+    },
+    "vb": {
+      "total": 7,
+      "correct": 7,
+      "accuracy": 100.0
+    },
+    "tp": {
+      "total": 12,
+      "correct": 12,
+      "accuracy": 100.0
+    },
+    "hc": {
+      "total": 5,
+      "correct": 5,
+      "accuracy": 100.0
+    },
+    "st": {
+      "total": 9,
+      "correct": 9,
+      "accuracy": 100.0
+    },
+    "tl": {
+      "total": 15,
+      "correct": 15,
+      "accuracy": 100.0
+    },
+    "ln": {
+      "total": 7,
+      "correct": 7,
+      "accuracy": 100.0
+    },
+    "mc": {
+      "total": 7,
+      "correct": 7,
+      "accuracy": 100.0
+    },
+    "dm": {
+      "total": 8,
+      "correct": 8,
+      "accuracy": 100.0
+    },
+    "bct": {
+      "total": 5,
+      "correct": 5,
+      "accuracy": 100.0
+    },
+    "đm": {
+      "total": 8,
+      "correct": 8,
+      "accuracy": 100.0
+    },
+    "nđ": {
+      "total": 3,
+      "correct": 3,
+      "accuracy": 100.0
+    },
+    "tk": {
+      "total": 7,
+      "correct": 7,
+      "accuracy": 100.0
+    },
+    "rg": {
+      "total": 6,
+      "correct": 6,
+      "accuracy": 100.0
+    },
+    "xb": {
+      "total": 12,
+      "correct": 12,
+      "accuracy": 100.0
+    },
+    "mx": {
+      "total": 6,
+      "correct": 6,
+      "accuracy": 100.0
+    },
+    "đn": {
+      "total": 8,
+      "correct": 8,
+      "accuracy": 100.0
+    },
+    "kl": {
+      "total": 9,
+      "correct": 9,
+      "accuracy": 100.0
+    },
+    "cv": {
+      "total": 13,
+      "correct": 13,
+      "accuracy": 100.0
+    },
+    "cd": {
+      "total": 5,
+      "correct": 5,
+      "accuracy": 100.0
+    },
+    "vn": {
+      "total": 9,
+      "correct": 9,
+      "accuracy": 100.0
+    },
+    "mr": {
+      "total": 7,
+      "correct": 7,
+      "accuracy": 100.0
+    },
+    "tg": {
+      "total": 6,
+      "correct": 6,
+      "accuracy": 100.0
+    },
+    "ttt": {
+      "total": 10,
+      "correct": 10,
+      "accuracy": 100.0
+    },
+    "ld": {
+      "total": 7,
+      "correct": 7,
+      "accuracy": 100.0
+    },
+    "hh": {
+      "total": 8,
+      "correct": 8,
+      "accuracy": 100.0
+    },
+    "hn": {
+      "total": 7,
+      "correct": 7,
+      "accuracy": 100.0
+    },
+    "xq": {
+      "total": 5,
+      "correct": 5,
+      "accuracy": 100.0
+    },
+    "dc": {
+      "total": 8,
+      "correct": 8,
+      "accuracy": 100.0
+    },
+    "htt": {
+      "total": 8,
+      "correct": 8,
+      "accuracy": 100.0
+    },
+    "kb": {
+      "total": 7,
+      "correct": 7,
+      "accuracy": 100.0
+    },
+    "gn": {
+      "total": 5,
+      "correct": 5,
+      "accuracy": 100.0
+    },
+    "bl": {
+      "total": 9,
+      "correct": 9,
+      "accuracy": 100.0
+    },
+    "nn": {
+      "total": 5,
+      "correct": 5,
+      "accuracy": 100.0
+    },
+    "tc": {
+      "total": 4,
+      "correct": 4,
+      "accuracy": 100.0
+    },
+    "rh": {
+      "total": 9,
+      "correct": 9,
+      "accuracy": 100.0
+    },
+    "cs": {
+      "total": 6,
+      "correct": 6,
+      "accuracy": 100.0
+    },
+    "hv": {
+      "total": 7,
+      "correct": 7,
+      "accuracy": 100.0
+    },
+    "kn": {
+      "total": 10,
+      "correct": 10,
+      "accuracy": 100.0
+    },
+    "nm": {
+      "total": 4,
+      "correct": 4,
+      "accuracy": 100.0
+    },
+    "tt": {
+      "total": 2,
+      "correct": 2,
+      "accuracy": 100.0
+    },
+    "dd": {
+      "total": 7,
+      "correct": 7,
+      "accuracy": 100.0
+    },
+    "tmt": {
+      "total": 6,
+      "correct": 6,
+      "accuracy": 100.0
+    },
+    "dh": {
+      "total": 3,
+      "correct": 3,
+      "accuracy": 100.0
+    },
+    "đk": {
+      "total": 3,
+      "correct": 3,
+      "accuracy": 100.0
+    },
+    "td": {
+      "total": 9,
+      "correct": 9,
+      "accuracy": 100.0
+    },
+    "dk": {
+      "total": 5,
+      "correct": 5,
+      "accuracy": 100.0
+    },
+    "kq": {
+      "total": 12,
+      "correct": 12,
+      "accuracy": 100.0
+    },
+    "sp": {
+      "total": 12,
+      "correct": 12,
+      "accuracy": 100.0
+    },
+    "tr": {
+      "total": 12,
+      "correct": 12,
+      "accuracy": 100.0
+    },
+    "kct": {
+      "total": 12,
+      "correct": 12,
+      "accuracy": 100.0
+    },
+    "ck": {
+      "total": 12,
+      "correct": 12,
+      "accuracy": 100.0
+    },
+    "hd": {
+      "total": 12,
+      "correct": 12,
+      "accuracy": 100.0
+    },
+    "đs": {
+      "total": 12,
+      "correct": 12,
+      "accuracy": 100.0
+    },
+    "rn": {
+      "total": 12,
+      "correct": 12,
+      "accuracy": 100.0
+    },
+    "nc": {
+      "total": 12,
+      "correct": 12,
+      "accuracy": 100.0
+    },
+    "sb": {
+      "total": 12,
+      "correct": 12,
+      "accuracy": 100.0
+    },
+    "lt": {
+      "total": 12,
+      "correct": 12,
+      "accuracy": 100.0
+    },
+    "mk": {
+      "total": 12,
+      "correct": 12,
+      "accuracy": 100.0
+    }
+  }
+}
