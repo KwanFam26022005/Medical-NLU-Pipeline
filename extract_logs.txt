@@ -1,0 +1,86 @@
+--- Cell 2 ---
+rement already satisfied: pygments<3.0.0,>=2.13.0 in /usr/local/lib/python3.12/dist-packages (from rich>=12.3.0->typer->huggingface_hub) (2.19.2)
+Requirement already satisfied: mdurl~=0.1 in /usr/local/lib/python3.12/dist-packages (from markdown-it-py>=2.2.0->rich>=12.3.0->typer->huggingface_hub) (0.1.2)
+Downloading pytorch_crf-0.7.2-py3-none-any.whl (9.5 kB)
+Downloading underthesea-9.2.11-py3-none-any.whl (7.0 MB)
+[2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m7.0/7.0 MB[0m [31m126.9 MB/s[0m eta [36m0:00:00[0m
+[?25hDownloading underthesea_core-3.3.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (1.5 MB)
+[2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m1.5/1.5 MB[0m [31m84.1 MB/s[0m eta [36m0:00:00[0m
+[?25hDownloading pyjnius-1.7.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.6 MB)
+[2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m1.6/1.6 MB[0m [31m86.2 MB/s[0m eta [36m0:00:00[0m
+[?25hBuilding wheels for collected packages: seqeval, py_vncorenlp
+  Building wheel for seqeval (setup.py) ... [?25l[?25hdone
+  Created wheel for seqeval: filename=seqeval-1.2.2-py3-none-any.whl size=16162 sha256=96405f1aecaf7055a498ef2583e5a10dbeee5399ac6c61d1f5e9d3bb9bc60f0d
+  Stored in directory: /root/.cache/pip/wheels/5f/b8/73/0b2c1a76b701a677653dd79ece07cfabd7457989dbfbdcd8d7
+  Building wheel for py_vncorenlp (setup.py) ... [?25l[?25hdone
+  Created wheel for py_vncorenlp: filename=py_vncorenlp-0.1.4-py3-none-any.whl size=4304 sha256=377a380a20dd7171ebb2308894eb86c48c605236938bd7ff3f5c2ad4351f51c2
+  Stored in directory: /root/.cache/pip/wheels/db/e5/ff/f4a1b4ece36e8582db1ca71150a34e987e65df50c35974e9bb
+Successfully built seqeval py_vncorenlp
+Installing collected packages: pyjnius, underthesea_core, pytorch-crf, py_vncorenlp, seqeval, underthesea
+Successfully installed py_vncorenlp-0.1.4 pyjnius-1.7.0 pytorch-crf-0.7.2 seqeval-1.2.2 underthesea-9.2.11 underthesea_core-3.3.0
+
+--- Cell 3 ---
+3% 2190/6570 [04:57<06:55, 10.55it/s]
+100% 32/32 [00:00<00:00, 42.78it/s][A
+{'loss': '1.507', 'grad_norm': '37.79', 'learning_rate': '1.478e-05', 'epoch': '5.023'}
+{'loss': '1.158', 'grad_norm': '18.32', 'learning_rate': '1.462e-05', 'epoch': '5.137'}
+{'loss': '1.037', 'grad_norm': '47.74', 'learning_rate': '1.445e-05', 'epoch': '5.251'}
+{'loss': '1.134', 'grad_norm': '13.69', 'learning_rate': '1.428e-05', 'epoch': '5.365'}
+{'loss': '1.187', 'grad_norm': '31.35', 'learning_rate': '1.411e-05', 'epoch': '5.479'}
+{'loss': '1.191', 'grad_norm': '56.76', 'learning_rate': '1.394e-05', 'epoch': '5.594'}
+{'loss': '1.271', 'grad_norm': '19.93', 'learning_rate': '1.377e-05', 'epoch': '5.708'}
+{'loss': '1.195', 'grad_norm': '20.65', 'learning_rate': '1.36e-05', 'epoch': '5.822'}
+{'loss': '1.181', 'grad_norm': '17.56', 'learning_rate': '1.343e-05', 'epoch': '5.936'}
+ 40% 2627/6570 [05:55<06:16, 10.47it/s]
+  0% 0/32 [00:00<?, ?it/s][A
+ 19% 6/32 [00:00<00:00, 45.12it/s][A
+ 34% 11/32 [00:00<00:00, 42.80it/s][A
+ 50% 16/32 [00:00<00:00, 40.36it/s][A
+ 66% 21/32 [00:00<00:00, 40.24it/s][A
+ 81% 26/32 [00:00<00:00, 40.66it/s][A
+                                       
+[A{'eval_loss': '3.333', 'eval_precision': '0.7671', 'eval_recall': '0.8', 'eval_f1': '0.7832', 'eval_runtime': '0.9081', 'eval_samples_per_second': '1101', 'eval_steps_per_second': '35.24', 'epoch': '6'}
+ 40% 2628/6570 [05:56<06:16, 10.47it/s]
+100% 32/32 [00:00<00:00, 41.79it/s][A
+{'train_runtime': '377', 'train_samples_per_second': '278.5', 'train_steps_per_second': '17.43', 'train_loss': '3.479', 'epoch': '6'}
+ 40% 2628/6570 [06:17<09:25,  6.97it/s]
+
+📈 Đánh giá chi tiết model tốt nhất:
+100% 32/32 [00:01<00:00, 19.39it/s]
+{'eval_loss': 2.816016674041748, 'eval_precision': 0.7734567901234568, 'eval_recall': 0.8136363636363636, 'eval_f1': 0.7930379746835443, 'eval_runtime': 1.8306, 'eval_samples_per_second': 546.259, 'eval_steps_per_second': 17.48, 'epoch': 6.0}
+
+✅ Model đã được lưu gọn gàng tại: ./models/ner_sota
+
+--- Cell 6 ---
+
+ 62% 20/32 [00:08<00:05,  2.30it/s][A
+ 66% 21/32 [00:08<00:04,  2.30it/s][A
+ 69% 22/32 [00:09<00:04,  2.30it/s][A
+ 72% 23/32 [00:09<00:03,  2.30it/s][A
+ 75% 24/32 [00:09<00:03,  2.30it/s][A
+ 78% 25/32 [00:10<00:03,  2.30it/s][A
+ 81% 26/32 [00:10<00:02,  2.30it/s][A
+ 84% 27/32 [00:11<00:02,  2.30it/s][A
+ 88% 28/32 [00:11<00:01,  2.30it/s][A
+ 91% 29/32 [00:12<00:01,  2.31it/s][A
+ 94% 30/32 [00:12<00:00,  2.31it/s][A
+ 97% 31/32 [00:13<00:00,  2.31it/s][A
+                                       
+[A{'eval_loss': '0.02387', 'eval_macro_f1': '0.9602', 'eval_micro_f1': '0.9531', 'eval_runtime': '13.6', 'eval_samples_per_second': '73.51', 'eval_steps_per_second': '2.352', 'epoch': '8'}
+ 53% 3504/6570 [45:23<31:40,  1.61it/s]
+100% 32/32 [00:13<00:00,  2.97it/s][A
+                                   [A
+Writing model shards:   0% 0/1 [00:00<?, ?it/s][A
+Writing model shards: 100% 1/1 [00:02<00:00,  2.26s/it]
+{'loss': '0.0004787', 'grad_norm': '0.002158', 'learning_rate': '9.318e-06', 'epoch': '8.014'}
+{'loss': '0.0002149', 'grad_norm': '0.007031', 'learning_rate': '9.288e-06', 'epoch': '8.037'}
+{'loss': '0.0003528', 'grad_norm': '0.01235', 'learning_rate': '9.257e-06', 'epoch': '8.059'}
+{'loss': '0.0007856', 'grad_norm': '1.265', 'learning_rate': '9.227e-06', 'epoch': '8.082'}
+{'loss': '9.794e-05', 'grad_norm': '0.0007605', 'learning_rate': '9.196e-06', 'epoch': '8.105'}
+{'loss': '9.355e-05', 'grad_norm': '0.0009403', 'learning_rate': '9.166e-06', 'epoch': '8.128'}
+{'loss': '0.0001125', 'grad_norm': '0.08856', 'learning_rate': '9.135e-06', 'epoch': '8.151'}
+{'loss': '0.0007474', 'grad_norm': '0.00212', 'learning_rate': '9.105e-06', 'epoch': '8.174'}
+{'loss': '0.0001979', 'grad_norm': '0.3113', 'learning_rate': '9.075e-06', 'epoch': '8.196'}
+{'loss': '0.0003782', 'grad_norm': '0.0007869', 'learning_rate': '9.044e-06', 'epoch': '8.219'}
+{'loss': '0.00296', 'grad_norm': '0.01963', 'learning_rate': '9.014e-06', 'epoch': '8.242'}
+ 55% 3618/6570 [46:58<34:55,  1.41it/s]

@@ -1,0 +1,205 @@
+=== CELL 0 (code) ===
+from google.colab import drive
+drive.mount('/content/drive')
+
+# Trỏ đường dẫn vào đúng thư mục dự án vừa upload
+%cd /content/drive/MyDrive/medical-nlu
+  [OUTPUT 0 stream, len=164]
+Drive already mounted at /content/drive; to attempt to forcibly remount, call drive.mount("/content/drive", force_remount=True).
+/content/drive/MyDrive/medical-nlu
+
+
+=== CELL 1 (code) ===
+%cd /content/drive/MyDrive/medical-nlu
+  [OUTPUT 0 stream, len=35]
+/content/drive/MyDrive/medical-nlu
+
+
+=== CELL 2 (code) ===
+!pip install transformers seqeval pytorch-crf huggingface_hub py_vncorenlp underthesea datasets
+  [OUTPUT 0 stream, len=9663]
+Requirement already satisfied: transformers in /usr/local/lib/python3.12/dist-packages (5.0.0)
+Collecting seqeval
+  Downloading seqeval-1.2.2.tar.gz (43 kB)
+[?25l     [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m0.0/43.6 kB[0m [31m?[0m eta [36m-:--:--[0m[2K     [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m43.6/43.6 kB[0m [31m4.8 MB/s[0m eta [36m0:00:00[0m
+[?25h  Preparing metadata (setup.py) ... [?25l[?25hdone
+Collecting pytorch-crf
+  Downloading pytorch_crf-0
+...[TRUNCATED]...
+m126.9 MB/s[0m eta [36m0:00:00[0m
+[?25hDownloading underthesea_core-3.3.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (1.5 MB)
+[2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m1.5/1.5 MB[0m [31m84.1 MB/s[0m eta [36m0:00:00[0m
+[?25hDownloading pyjnius-1.7.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.6 MB)
+[2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m1.6/1.6 MB[0m [31m86.2 MB/s[0m eta [36m0:00:00[0m
+[?25hBuilding wheels for collected packages: seqeval, py_vncorenlp
+  Building wheel for seqeval (setup.py) ... [?25l[?25hdone
+  Created wheel for seqeval: filename=seqeval-1.2.2-py3-none-any.whl size=16162 sha256=96405f1aecaf7055a498ef2583e5a10dbeee5399ac6c61d1f5e9d3bb9bc60f0d
+  Stored in directory: /root/.cache/pip/wheels/5f/b8/73/0b2c1a76b701a677653dd79ece07cfabd7457989dbfbdcd8d7
+  Building wheel for py_vncorenlp (setup.py) ... [?25l[?25hdone
+  Created wheel for py_vncorenlp: filename=py_vncorenlp-0.1.4-py3-none-any.whl size=4304 sha256=377a380a20dd7171ebb2308894eb86c48c605236938bd7ff3f5c2ad4351f51c2
+  Stored in directory: /root/.cache/pip/wheels/db/e5/ff/f4a1b4ece36e8582db1ca71150a34e987e65df50c35974e9bb
+Successfully built seqeval py_vncorenlp
+Installing collected packages: pyjnius, underthesea_core, pytorch-crf, py_vncorenlp, seqeval, underthesea
+Successfully installed py_vncorenlp-0.1.4 pyjnius-1.7.0 pytorch-crf-0.7.2 seqeval-1.2.2 underthesea-9.2.11 underthesea_core-3.3.0
+
+
+=== CELL 3 (code) ===
+!python train_ner.py \
+    --train_data data/ner_train.conll \
+    --val_data data/ner_val.conll \
+    --output_dir ./models/ner_sota \
+    --epochs 15 \
+    --batch_size 16
+  [OUTPUT 0 stream, len=10981]
+============================================================
+🏥 TRAINING SOTA: Medical NER (ViHealthBERT + CRF)
+============================================================
+config.json: 100% 817/817 [00:00<00:00, 1.64MB/s]
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+vocab.txt: 895kB [00:00, 85.7MB/s]
+bpe.codes: 1.14MB [00:00, 110MB/s]
+pytorch_model.bin: 100% 540M/540M [00:17<00:00, 31.2MB/s]
+Loading weig
+...[TRUNCATED]...
+epoch': '5.479'}
+{'loss': '1.191', 'grad_norm': '56.76', 'learning_rate': '1.394e-05', 'epoch': '5.594'}
+{'loss': '1.271', 'grad_norm': '19.93', 'learning_rate': '1.377e-05', 'epoch': '5.708'}
+{'loss': '1.195', 'grad_norm': '20.65', 'learning_rate': '1.36e-05', 'epoch': '5.822'}
+{'loss': '1.181', 'grad_norm': '17.56', 'learning_rate': '1.343e-05', 'epoch': '5.936'}
+ 40% 2627/6570 [05:55<06:16, 10.47it/s]
+  0% 0/32 [00:00<?, ?it/s][A
+ 19% 6/32 [00:00<00:00, 45.12it/s][A
+ 34% 11/32 [00:00<00:00, 42.80it/s][A
+ 50% 16/32 [00:00<00:00, 40.36it/s][A
+ 66% 21/32 [00:00<00:00, 40.24it/s][A
+ 81% 26/32 [00:00<00:00, 40.66it/s][A
+                                       
+[A{'eval_loss': '3.333', 'eval_precision': '0.7671', 'eval_recall': '0.8', 'eval_f1': '0.7832', 'eval_runtime': '0.9081', 'eval_samples_per_second': '1101', 'eval_steps_per_second': '35.24', 'epoch': '6'}
+ 40% 2628/6570 [05:56<06:16, 10.47it/s]
+100% 32/32 [00:00<00:00, 41.79it/s][A
+{'train_runtime': '377', 'train_samples_per_second': '278.5', 'train_steps_per_second': '17.43', 'train_loss': '3.479', 'epoch': '6'}
+ 40% 2628/6570 [06:17<09:25,  6.97it/s]
+
+📈 Đánh giá chi tiết model tốt nhất:
+100% 32/32 [00:01<00:00, 19.39it/s]
+{'eval_loss': 2.816016674041748, 'eval_precision': 0.7734567901234568, 'eval_recall': 0.8136363636363636, 'eval_f1': 0.7930379746835443, 'eval_runtime': 1.8306, 'eval_samples_per_second': 546.259, 'eval_steps_per_second': 17.48, 'epoch': 6.0}
+
+✅ Model đã được lưu gọn gàng tại: ./models/ner_sota
+
+
+=== CELL 4 (code) ===
+from huggingface_hub import notebook_login
+notebook_login()
+  [OUTPUT 0 display]: VBox(children=(HTML(value='<center> <img\nsrc=https://huggingface.co/front/assets/huggingface_logo-noborder.sv…
+
+=== CELL 5 (code) ===
+from huggingface_hub import HfApi
+import os
+
+api = HfApi()
+
+# 1. Tên repo của bạn trên HF (Thay YOUR_USERNAME bằng username thật của bạn)
+repo_id = "hoangkhang1628/vihealthbert-crf-medical-ner"
+
+# 2. Tạo repository trên Hub (nếu chưa có)
+api.create_repo(repo_id=repo_id, exist_ok=True)
+
+print("Đang đ
+  [OUTPUT 0 stream, len=40]
+Đang đẩy trọng số Model và Tokenizer...
+
+  [OUTPUT 1 display]: Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+  [OUTPUT 2 display]: New Data Upload               : |          |  0.00B /  0.00B            
+  [OUTPUT 3 display]:   ...ckpoint-2628/optimizer.pt:   0%|          | 3.10MB / 1.08GB            
+  [OUTPUT 4 display]:   ...kpoint-2628/rng_state.pth:  77%|#######7  | 11.3kB / 14.6kB            
+  [OUTPUT 5 display]:   ...kpoint-1314/rng_state.pth:  77%|#######7  | 11.3kB / 14.6kB            
+  [OUTPUT 6 display]:   ...ckpoint-1314/optimizer.pt:   2%|2         | 22.0MB / 1.08GB            
+  [OUTPUT 7 display]:   ...er_sota/pytorch_model.bin:   0%|          |  548kB /  540MB            
+  [OUTPUT 8 display]:   ...nt-1314/model.safetensors:   1%|          | 3.93MB /  540MB            
+  [OUTPUT 9 display]:   ...nt-2628/model.safetensors:   0%|          |  549kB /  540MB            
+  [OUTPUT 10 display]:   ...checkpoint-1314/scaler.pt:   8%|8         |   116B / 1.38kB            
+  [OUTPUT 11 display]:   ...ckpoint-1314/scheduler.pt:   8%|8         |   123B / 1.47kB            
+  [OUTPUT 12 display]:   ...nt-1314/training_args.bin:   8%|8         |   439B / 5.20kB            
+  [OUTPUT 13 stream, len=154]
+Đang đẩy file kiến trúc custom_models.py...
+✅ Hoàn tất! Model của bạn đã nằm trên Hub: https://huggingface.co/hoangkhang1628/vihealthbert-crf-medical-ner
+
+
+=== CELL 6 (code) ===
+# Bắt đầu Train
+!python train_intent.py \
+    --train_data data/intent_train.json \
+    --val_data data/intent_val.json \
+    --output_dir ./models/intent_sota \
+    --epochs 15 \
+    --batch_size 16
+  [OUTPUT 0 stream, len=48464]
+============================================================
+🎯 TRAINING SOTA: Multi-label Intent (ASL + Dynamic Threshold)
+============================================================
+[IntentDataLoader] Đã load 7000 samples từ intent_train.json
+[IntentDataLoader] Phân bố Intent labels sau khi chuẩn hóa:
+  - Diagnosis: 3471/7000 (pos_weight = 1.02)
+  - Treatment: 1981/7000 (pos_weight = 2.53)
+  - Severity: 1056/7000 (pos_weight = 5.63)
+  - Cause: 492/7000 (pos_weight = 13.23)
+[IntentDataLoader] Đ
+...[TRUNCATED]...
+        
+[A{'eval_loss': '0.02387', 'eval_macro_f1': '0.9602', 'eval_micro_f1': '0.9531', 'eval_runtime': '13.6', 'eval_samples_per_second': '73.51', 'eval_steps_per_second': '2.352', 'epoch': '8'}
+ 53% 3504/6570 [45:23<31:40,  1.61it/s]
+100% 32/32 [00:13<00:00,  2.97it/s][A
+                                   [A
+Writing model shards:   0% 0/1 [00:00<?, ?it/s][A
+Writing model shards: 100% 1/1 [00:02<00:00,  2.26s/it]
+{'loss': '0.0004787', 'grad_norm': '0.002158', 'learning_rate': '9.318e-06', 'epoch': '8.014'}
+{'loss': '0.0002149', 'grad_norm': '0.007031', 'learning_rate': '9.288e-06', 'epoch': '8.037'}
+{'loss': '0.0003528', 'grad_norm': '0.01235', 'learning_rate': '9.257e-06', 'epoch': '8.059'}
+{'loss': '0.0007856', 'grad_norm': '1.265', 'learning_rate': '9.227e-06', 'epoch': '8.082'}
+{'loss': '9.794e-05', 'grad_norm': '0.0007605', 'learning_rate': '9.196e-06', 'epoch': '8.105'}
+{'loss': '9.355e-05', 'grad_norm': '0.0009403', 'learning_rate': '9.166e-06', 'epoch': '8.128'}
+{'loss': '0.0001125', 'grad_norm': '0.08856', 'learning_rate': '9.135e-06', 'epoch': '8.151'}
+{'loss': '0.0007474', 'grad_norm': '0.00212', 'learning_rate': '9.105e-06', 'epoch': '8.174'}
+{'loss': '0.0001979', 'grad_norm': '0.3113', 'learning_rate': '9.075e-06', 'epoch': '8.196'}
+{'loss': '0.0003782', 'grad_norm': '0.0007869', 'learning_rate': '9.044e-06', 'epoch': '8.219'}
+{'loss': '0.00296', 'grad_norm': '0.01963', 'learning_rate': '9.014e-06', 'epoch': '8.242'}
+ 55% 3618/6570 [46:58<34:55,  1.41it/s]
+
+=== CELL 7 (code) ===
+from huggingface_hub import notebook_login, HfApi
+
+# Đăng nhập bằng Token (WRITE)
+notebook_login()
+
+=== CELL 8 (code) ===
+api = HfApi()
+repo_id = "hoangkhang1628/vihealthbert-asl-medical-intent"
+
+api.create_repo(repo_id=repo_id, exist_ok=True)
+print("Đang đẩy Model, Tokenizer và file Thresholds lên Hub...")
+
+api.upload_folder(
+    folder_path="./models/intent_sota",
+    repo_id=repo_id,
+    repo_type="model",
+)
+print(f
+  [OUTPUT 0 stream, len=56]
+Đang đẩy Model, Tokenizer và file Thresholds lên Hub...
+
+  [OUTPUT 1 display]: Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+  [OUTPUT 2 display]: New Data Upload               : |          |  0.00B /  0.00B            
+  [OUTPUT 3 display]:   ...ckpoint-438/rng_state.pth:  77%|#######7  | 11.3kB / 14.6kB            
+  [OUTPUT 4 display]:   ...kpoint-1752/rng_state.pth:  77%|#######7  | 11.3kB / 14.6kB            
+  [OUTPUT 5 display]:   ...ckpoint-1752/optimizer.pt:   0%|          |  131kB / 1.08GB            
+  [OUTPUT 6 display]:   ...eckpoint-438/optimizer.pt:   0%|          |  131kB / 1.08GB            
+  [OUTPUT 7 display]:   ...nt_sota/model.safetensors:   0%|          | 1.40MB /  540MB            
+  [OUTPUT 8 display]:   ...int-438/model.safetensors:   1%|          | 4.80MB /  540MB            
+  [OUTPUT 9 display]:   ...nt-1752/model.safetensors:   0%|          | 1.40MB /  540MB            
+  [OUTPUT 10 display]:   ...ckpoint-1752/scheduler.pt:   1%|1         |  15.0B / 1.47kB            
+  [OUTPUT 11 display]:   ...nt-1752/training_args.bin:   1%|1         |  55.0B / 5.20kB            
+  [OUTPUT 12 display]:   ...eckpoint-438/scheduler.pt:   1%|1         |  15.0B / 1.47kB            
+  [OUTPUT 13 stream, len=120]
+✅ Hoàn tất! Model Intent của bạn đã nằm trên Hub: https://huggingface.co/hoangkhang1628/vihealthbert-asl-medical-intent
+
+
