@@ -45,7 +45,11 @@ def load_hospital_topic_data(path: Path) -> list:
     samples = []
     for item in data:
         text = item.get("text", "").strip()
-        topic = item.get("label", item.get("topic", "")).strip()
+        topic = item.get("topic", "")
+        if isinstance(topic, int):
+            # 'topic' field is sometimes int ID — skip, use label map
+            continue
+        topic = str(topic).strip()
 
         if not text or not topic:
             continue
