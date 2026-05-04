@@ -22,6 +22,8 @@ if sys.stdout.encoding != "utf-8":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE_DIR))
 
 from config_joint import (
     TOPIC_DATA_DIR, JOINT_DATA_DIR,
@@ -137,15 +139,23 @@ def pseudo_label_intent(samples: list, device: str = "cpu") -> list:
 def pseudo_label_ner(samples: list, device: str = "cpu") -> list:
     """Pseudo-label NER using the trained NER model (ViHealthBERT + CRF)."""
     try:
-        from transformers import AutoTokenizer, AutoModelForTokenClassification
+        from transformers import AutoTokenizer
+        from huggingface_hub import hf_hub_download
         import torch
+        from custom_models import ViHealthBertCRF
     except ImportError:
-        print("⚠️ transformers/torch not installed.")
+        print("⚠️ transformers/torch/custom_models not installed.")
         return samples
 
     print(f"📥 Loading NER model: {NER_MODEL_HF}")
     tokenizer = AutoTokenizer.from_pretrained(NER_MODEL_HF)
-    model = AutoModelForTokenClassification.from_pretrained(NER_MODEL_HF)
+    
+    # Init custom architecture
+    model = ViHealthBertCRF(num_labels=len(NER_TAGS))
+    # Download and load state_dict
+    ckpt_path = hf_hub_download(repo_id=NER_MODEL_HF, filename="pytorch_model.bin")
+    state_dict = torch.load(ckpt_path, map_location=device)
+    model.load_state_dict(state_dict)
     model.to(device).eval()
 
     # Build id2tag from model config
@@ -166,21 +176,20 @@ def pseudo_label_ner(samples: list, device: str = "cpu") -> list:
                 texts, max_length=128, padding=True,
                 truncation=True, return_tensors="pt",
                 return_offsets_mapping=True,
-            ).to(device)
-
+            )
             offset_mapping = inputs.pop("offset_mapping")
-            outputs = model(**inputs)
-            probs = torch.softmax(outputs.logits, dim=-1)
-            pred_confs, pred_ids = probs.max(dim=-1)
+            inputs = {k: v.to(device) for k, v in inputs.items()}
+            
+            # ViHealthBertCRF without labels returns decoded tags directly (list of lists of ints)
+            batch_preds = model(**inputs)
 
         for j, s in enumerate(batch):
             words = s["text"].split()
             n_words = len(words)
 
-            # Align subword predictions to word-level
-            offsets = offset_mapping[j].cpu().tolist()
-            token_preds = pred_ids[j].cpu().tolist()
-            token_confs = pred_confs[j].cpu().tolist()
+            offsets = offset_mapping[j].tolist()
+            token_preds = batch_preds[j]  # List of predicted tag IDs
+            token_confs = [1.0] * len(token_preds) # CRF decode doesn't give probabilities natively
 
             word_tags = ["O"] * n_words
             word_confs = [1.0] * n_words
