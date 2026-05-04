@@ -11,8 +11,8 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent  # Chatbot-Y tế/
 KEHN_DIR = Path(__file__).resolve().parent         # kehn_joint/
 
-# Data sources trên D: drive (project gốc)
-_DATA_ROOT = Path(r"D:\Chatbot-Y tế")
+# Data sources (portable — works on both Windows local and Colab)
+_DATA_ROOT = BASE_DIR
 VIMQ_DATA_DIR = _DATA_ROOT / "ViMQ-main" / "ViMQ-main" / "data"
 TOPIC_DATA_DIR = _DATA_ROOT / "data"
 
