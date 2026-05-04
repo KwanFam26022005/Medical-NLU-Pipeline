@@ -158,11 +158,9 @@ def pseudo_label_ner(samples: list, device: str = "cpu") -> list:
     model.load_state_dict(state_dict)
     model.to(device).eval()
 
-    # Build id2tag from model config
-    id2tag = model.config.id2label if hasattr(model.config, "id2label") else {}
-    if not id2tag:
-        id2tag = {i: t for i, t in enumerate(NER_TAGS)}
-    print(f"   NER tags from model: {list(id2tag.values())[:7]}...")
+    # Build id2tag from NER_TAGS
+    id2tag = {i: t for i, t in enumerate(NER_TAGS)}
+    print(f"   NER tags: {list(id2tag.values())[:7]}...")
 
     batch_size = 32
     labeled = 0
