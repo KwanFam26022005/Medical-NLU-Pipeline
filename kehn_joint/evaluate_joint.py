@@ -9,8 +9,7 @@ import sys
 from pathlib import Path
 from tabulate import tabulate
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from config_joint import JOINT_OUTPUT_DIR
+from .config_joint import JOINT_OUTPUT_DIR
 
 
 def load_results(output_dir: Path) -> list:

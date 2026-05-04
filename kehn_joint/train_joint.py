@@ -22,16 +22,13 @@ import torch.nn.functional as F
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import OneCycleLR
 
-# Add kehn_joint to path
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from config_joint import (
+from .config_joint import (
     MODEL_CONFIG, TRAIN_CONFIG, JOINT_DATA_DIR, JOINT_OUTPUT_DIR,
     TOPIC_LABELS, INTENT_LABELS, NER_TAGS, ID2NER, N_NER_TAG,
 )
-from data_loader_joint import create_dataloaders
-from curriculum import CurriculumScheduler
-from metrics import compute_all_metrics
+from .data_loader_joint import create_dataloaders
+from .curriculum import CurriculumScheduler
+from .metrics import compute_all_metrics
 
 
 def set_seed(seed: int):
@@ -46,7 +43,7 @@ def set_seed(seed: int):
 
 def build_model(backbone_name: str, topic_class_weights=None, device="cpu"):
     """Build KEHN model."""
-    from model.kehn_model import KEHN
+    from .model.kehn_model import KEHN
 
     weights_tensor = None
     if topic_class_weights is not None:
@@ -173,7 +170,14 @@ def train(args):
         lr=args.lr,
         weight_decay=TRAIN_CONFIG["weight_decay"],
     )
-    total_steps = len(train_loader) * args.epochs
+
+    # FP16 Mixed Precision & Gradient Accumulation
+    accum_steps = TRAIN_CONFIG.get("gradient_accumulation_steps", 1)
+    use_amp = device.type == "cuda" and TRAIN_CONFIG.get("fp16", False)
+    scaler = torch.amp.GradScaler(enabled=use_amp)
+
+    steps_per_epoch = (len(train_loader) + accum_steps - 1) // accum_steps
+    total_steps = steps_per_epoch * args.epochs
     scheduler = OneCycleLR(
         optimizer, max_lr=args.lr,
         total_steps=total_steps, pct_start=TRAIN_CONFIG["warmup_ratio"],
@@ -195,6 +199,7 @@ def train(args):
     print(f"🚀 Training KEHN — Experiment: {args.exp_name}")
     print(f"   Backbone: {backbone}")
     print(f"   Epochs: {args.epochs}, Batch: {args.batch_size}, LR: {args.lr}")
+    print(f"   FP16: {use_amp}, Grad Accum: {accum_steps}x (effective batch={args.batch_size * accum_steps})")
     print(f"{'=' * 60}\n")
 
     history = []
@@ -217,25 +222,30 @@ def train(args):
             intent_labels = batch["intent_labels"].to(device)
             ner_labels = batch["ner_labels"].to(device)
 
-            output = model(
-                input_ids, attention_mask,
-                topic_labels=topic_labels,
-                intent_labels=intent_labels,
-                ner_labels=ner_labels,
-                phase=phase,
-            )
+            # Forward with AMP autocast
+            with torch.amp.autocast(device_type=device.type, enabled=use_amp):
+                output = model(
+                    input_ids, attention_mask,
+                    topic_labels=topic_labels,
+                    intent_labels=intent_labels,
+                    ner_labels=ner_labels,
+                    phase=phase,
+                )
+                loss = output["loss"] / accum_steps
 
-            loss = output["loss"]
-            loss.backward()
+            # Backward with GradScaler
+            scaler.scale(loss).backward()
 
-            # Gradient clipping
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            # Gradient accumulation: step only every accum_steps
+            if (step + 1) % accum_steps == 0 or (step + 1) == len(train_loader):
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                scaler.step(optimizer)
+                scaler.update()
+                scheduler.step()
+                optimizer.zero_grad()
 
-            optimizer.step()
-            scheduler.step()
-            optimizer.zero_grad()
-
-            epoch_loss += loss.item()
+            epoch_loss += loss.item() * accum_steps
             n_batches += 1
 
             if (step + 1) % 50 == 0:

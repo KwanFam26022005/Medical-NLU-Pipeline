@@ -237,6 +237,10 @@ def main():
         else:
             class_weights.append(1.0)
 
+    # Cap extreme weights để tránh loss spike (Issue 4: traditional_medicine=376.0)
+    MAX_CLASS_WEIGHT = 10.0
+    class_weights = [min(w, MAX_CLASS_WEIGHT) for w in class_weights]
+
     # Bước 4: Save
     print("\n💾 Bước 3: Saving joint dataset...")
 

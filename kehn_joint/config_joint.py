@@ -16,9 +16,9 @@ _DATA_ROOT = Path(r"D:\Chatbot-Y tế")
 VIMQ_DATA_DIR = _DATA_ROOT / "ViMQ-main" / "ViMQ-main" / "data"
 TOPIC_DATA_DIR = _DATA_ROOT / "data"
 
-# Output cũng trên D: drive (C: drive hết dung lượng)
-JOINT_DATA_DIR = _DATA_ROOT / "kehn_joint" / "data"
-JOINT_OUTPUT_DIR = _DATA_ROOT / "kehn_joint" / "outputs"
+# Data & output dirs (relative — portable giữa local Windows và Colab)
+JOINT_DATA_DIR = KEHN_DIR / "data"
+JOINT_OUTPUT_DIR = KEHN_DIR / "outputs"
 
 # Existing model directories for pseudo-labeling
 TOPIC_MODEL_HF = "KwanFam26022005/model2B-topic-classification"
