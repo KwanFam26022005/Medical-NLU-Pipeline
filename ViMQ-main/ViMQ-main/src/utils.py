@@ -19,7 +19,7 @@ MODEL_CLASSES = {
 }
 
 MODEL_PATH_MAP = {
-    'vimq_model': "/workspace/vinbrain/vutran/Backbone/phoBERT/"
+    'vimq_model': "demdecuong/vihealthbert-base-word"
 }
 
 def init_logger():
