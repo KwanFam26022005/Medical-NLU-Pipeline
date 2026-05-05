@@ -42,10 +42,37 @@ VIMQ_KEHN_PATH = PSEUDO_DIR / "vimq_kehn.jsonl"
 OUT_HOSPITAL_PATH = PSEUDO_DIR / "hospital_kehn_fused.jsonl"
 OUT_MERGED_PATH = PSEUDO_DIR / "merged_kehn_fused.jsonl"
 
+# Confidence gates for hospital pseudo data
+MIN_TOPIC_CONFIDENCE = 1.0      # topic is human-labeled from topic_train
+MIN_INTENT_CONFIDENCE = 0.85    # from intent pseudo model
+MIN_NER_CONFIDENCE = 1.0        # ViMQ relabel currently emits fixed 1.0
+
 
 def split_sentences(text: str) -> List[str]:
     parts = re.split(r"(?<=[\.\!\?])\s+", text.strip())
     return [p.strip() for p in parts if p.strip()]
+
+
+def normalize_text_surface(text: str) -> str:
+    # Lowercase for stable text style and reduced sparsity
+    text = text.lower().strip()
+
+    # Normalize repeated punctuation and spacing
+    text = re.sub(r"\s+", " ", text)
+    text = re.sub(r"\?{2,}", "?", text)
+    text = re.sub(r"\.{2,}", ".", text)
+
+    # Expand frequent colloquial pattern
+    text = re.sub(r"\btầm\b", "khoảng", text)
+
+    # Remove brackets around dosage chunks, keep content
+    text = re.sub(r"\(\s*([^()]*?)\s*\)", r"\1", text)
+
+    # Normalize spaces around punctuation
+    text = re.sub(r"\s+([,.;:!?])", r"\1", text)
+    text = re.sub(r"([,.;:!?])([^\s])", r"\1 \2", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
 
 
 def compact_repetitive_text(text: str, similarity_threshold: float = 0.92) -> str:
@@ -78,6 +105,10 @@ def compact_repetitive_text(text: str, similarity_threshold: float = 0.92) -> st
 
 
 def tokenize_text(text: str) -> List[str]:
+    # Keep phrase connectors with underscore when they look medical terms.
+    # But normalize some noisy connective forms that are usually not entities.
+    text = re.sub(r"\bcó_ăn\b", "có ăn", text)
+    text = re.sub(r"\bbác_sĩ\b", "bác_sĩ", text)
     punct_spaced = re.sub(r'([.,?!;:()\[\]{}"\'])', r" \1 ", text)
     punct_spaced = re.sub(r"\s+", " ", punct_spaced).strip()
     if ViTokenizer is not None:
@@ -120,7 +151,8 @@ def load_topic_samples() -> List[Dict]:
         topic = remap_topic(topic)
         if topic is None or topic not in TOPIC2ID:
             continue
-        compact = compact_repetitive_text(text)
+        cleaned = normalize_text_surface(text)
+        compact = compact_repetitive_text(cleaned)
         words = tokenize_text(compact)
         if not words:
             continue
@@ -194,6 +226,17 @@ def validate_sample(item: Dict) -> bool:
     return True
 
 
+def pass_confidence_filter(item: Dict) -> bool:
+    topic_conf = float(item.get("topic_confidence", 0.0))
+    intent_conf = float(item.get("intent_confidence", 0.0))
+    ner_conf = float(item.get("ner_confidence", 0.0))
+    return (
+        topic_conf >= MIN_TOPIC_CONFIDENCE
+        and intent_conf >= MIN_INTENT_CONFIDENCE
+        and ner_conf >= MIN_NER_CONFIDENCE
+    )
+
+
 def write_jsonl(path: Path, rows: List[Dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
@@ -226,8 +269,16 @@ def main() -> None:
 
     print("4) Finalize fields + validate...")
     hospital = finalize_intent_fields(hospital)
+    before_filter = len(hospital)
     hospital = [s for s in hospital if validate_sample(s)]
-    print(f"   Valid fused hospital samples: {len(hospital)}")
+    after_validate = len(hospital)
+    hospital = [s for s in hospital if pass_confidence_filter(s)]
+    print(f"   After schema validation: {after_validate}/{before_filter}")
+    print(
+        "   After confidence filter "
+        f"(topic>={MIN_TOPIC_CONFIDENCE}, intent>={MIN_INTENT_CONFIDENCE}, ner>={MIN_NER_CONFIDENCE}): "
+        f"{len(hospital)}/{after_validate}"
+    )
 
     print("5) Save hospital fused dataset...")
     write_jsonl(OUT_HOSPITAL_PATH, hospital)
