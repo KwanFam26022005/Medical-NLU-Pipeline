@@ -20,7 +20,7 @@ class EarlyStopping:
         self.counter = 0
         self.best_score = None
         self.early_stop = False
-        self.val_loss_min = np.Inf
+        self.val_loss_min = np.inf
 
     def __call__(self, val_loss, model, args):
         if args.tuning_metric == "loss":
@@ -54,8 +54,13 @@ class EarlyStopping:
         self.val_loss_min = val_loss
         
     def save_model(self, model, args):
-        checkpoint = {'model': self.model,
-                      'state_dict': self.model.state_dict(),
-                      }
-        path = os.path.join(args.model_dir, f'checkpoint.pth')
+        if hasattr(model, "module"):
+            model_to_save = model.module
+        else:
+            model_to_save = model
+            
+        checkpoint = {
+            'state_dict': model_to_save.state_dict(),
+        }
+        path = os.path.join(args.model_dir, 'checkpoint.pth')
         torch.save(checkpoint, path)

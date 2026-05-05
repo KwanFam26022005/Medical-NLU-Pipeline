@@ -44,8 +44,11 @@ def load_vimq_model():
         char_vocab = json.load(f)
         
     # Tải model
-    _, model_class, _ = MODEL_CLASSES[args.model_type]
-    model = model_class.from_pretrained(MODEL_DIR, args=args)
+    config_class, model_class, _ = MODEL_CLASSES[args.model_type]
+    config = config_class.from_pretrained("demdecuong/vihealthbert-base-word")
+    model = model_class(config=config, args=args)
+    checkpoint = torch.load(os.path.join(MODEL_DIR, "checkpoint.pth"), map_location=device)
+    model.load_state_dict(checkpoint['state_dict'])
     model.to(device)
     model.eval()
     

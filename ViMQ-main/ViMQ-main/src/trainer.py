@@ -306,7 +306,11 @@ class Trainer(object):
         if not os.path.exists(self.args.model_dir):
             os.makedirs(self.args.model_dir)
         model_to_save = self.model.module if hasattr(self.model, "module") else self.model
-        model_to_save.save_pretrained(self.args.model_dir)
+        checkpoint = {
+            'state_dict': model_to_save.state_dict(),
+        }
+        path = os.path.join(self.args.model_dir, 'checkpoint.pth')
+        torch.save(checkpoint, path)
 
         # Save training arguments together with the trained model
         torch.save(self.args, os.path.join(self.args.model_dir, "training_args.bin"))
@@ -318,11 +322,13 @@ class Trainer(object):
             raise Exception("Model doesn't exists! Train first!")
 
         try:
-            self.model = self.model_class.from_pretrained(
-                self.args.model_dir,
+            checkpoint = torch.load(os.path.join(self.args.model_dir, 'checkpoint.pth'), map_location=self.args.device)
+            self.model = self.model_class(
+                config=self.config,
                 args=self.args
             )
+            self.model.load_state_dict(checkpoint['state_dict'])
             self.model.to(self.args.device)
             logger.info("***** Model Loaded *****")
-        except Exception:
-            raise Exception("Some model files might be missing...")
+        except Exception as e:
+            raise Exception(f"Some model files might be missing... {e}")
