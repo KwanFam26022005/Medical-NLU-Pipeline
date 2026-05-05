@@ -79,10 +79,17 @@ def spacy_to_iob(spacy, seq_len):
             start = i[0]
             end = i[1]
             type_ent = i[2]
+            
+            # Clip bounds to avoid list extension error in seqeval
+            if start >= seq_len:
+                continue
+            end = min(end, seq_len - 1)
+            
             sub_iob = ['I-'+type_ent]*(end-start+1)
             sub_iob[0:1] = ['B-'+type_ent]
             iob[start:end+1] = sub_iob
-    return iob
+    # Cắt cứng lại lần nữa cho chắc chắn
+    return iob[:seq_len]
 def get_iou_score(tensor_1, tensor_2):
     """
     tensor_1: is tensor prediction 
