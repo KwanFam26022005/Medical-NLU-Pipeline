@@ -18,6 +18,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Dict, List
+import numpy as np
 
 try:
     from pyvi import ViTokenizer  # type: ignore[reportMissingImports]
@@ -138,6 +139,55 @@ def normalize_ner_tag(tag: str) -> str:
     return "O"
 
 
+def decode_spans_from_score(
+    score_4d: np.ndarray,
+    index2label: Dict[int, str],
+    seq_len: int,
+    min_prob: float = 0.85,
+    max_span_len: int = 8,
+) -> List[List]:
+    """
+    Decode spans from ViMQ score tensor with confidence gating + non-overlap.
+    This avoids dense noisy spans produced by plain argmax over all i,j cells.
+    """
+    score = score_4d[0]  # (L, L, C)
+    candidates = []
+
+    # Candidate extraction
+    for i in range(seq_len):
+        j_max = min(seq_len - 1, i + max_span_len - 1)
+        for j in range(i, j_max + 1):
+            logits = score[i, j]
+            # Stable softmax
+            z = logits - np.max(logits)
+            p = np.exp(z)
+            p = p / np.sum(p)
+            cls = int(np.argmax(p))
+            conf = float(p[cls])
+            if cls <= 0 or conf < min_prob:
+                continue
+            label = index2label.get(cls, "UNK")
+            if label == "UNK":
+                continue
+            candidates.append((conf, i, j, label))
+
+    # Prefer high-confidence, then shorter spans (usually cleaner)
+    candidates.sort(key=lambda x: (-x[0], (x[2] - x[1])))
+
+    occupied = [False] * seq_len
+    selected = []
+    for conf, i, j, label in candidates:
+        if any(occupied[k] for k in range(i, j + 1)):
+            continue
+        for k in range(i, j + 1):
+            occupied[k] = True
+        selected.append([i, j, label, conf])
+
+    # sort by start index for downstream iob conversion
+    selected.sort(key=lambda x: (x[0], x[1]))
+    return selected
+
+
 def load_topic_samples() -> List[Dict]:
     with open(TOPIC_TRAIN_PATH, "r", encoding="utf-8") as f:
         rows = json.load(f)
@@ -180,7 +230,6 @@ def relabel_ner_vimq(samples: List[Dict]) -> List[Dict]:
         )
 
         import torch
-        import numpy as np
 
         inputs = {
             "input_ids": input_ids.to(device),
@@ -193,14 +242,22 @@ def relabel_ner_vimq(samples: List[Dict]) -> List[Dict]:
 
         with torch.no_grad():
             score, _ = model(**inputs)
-        preds = np.argmax(score.detach().cpu().numpy(), axis=-1)[0]
-        spans = span_decode(preds, index2label)
+        score_np = score.detach().cpu().numpy()
+        spans_with_conf = decode_spans_from_score(
+            score_np, index2label, seq_len, min_prob=0.85, max_span_len=8
+        )
+        spans = [[s, e, t] for s, e, t, _ in spans_with_conf]
         raw_tags = spacy_to_iob(spans, seq_len)
         ner_tags = [normalize_ner_tag(t) for t in raw_tags]
 
         item["ner_tags"] = ner_tags
         item["ner_tag_ids"] = [NER2ID.get(t, 0) for t in ner_tags]
-        item["ner_confidence"] = 1.0
+        if spans_with_conf:
+            item["ner_confidence"] = float(
+                sum(conf for *_rest, conf in spans_with_conf) / len(spans_with_conf)
+            )
+        else:
+            item["ner_confidence"] = 0.0
     return samples
 
 
