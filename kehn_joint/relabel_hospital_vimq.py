@@ -88,6 +88,9 @@ def preprocess_text(tokenizer, words, char_vocab, args):
         attention_mask = attention_mask + [0] * (max_seq_len - len(input_ids))
         input_ids = input_ids + [tokenizer.pad_token_id] * (max_seq_len - len(input_ids))
         firstSWindices = firstSWindices + [0]*(max_seq_len - len(firstSWindices))
+        
+    # Clip values in firstSWindices to avoid out-of-bounds error when input_ids is truncated
+    firstSWindices = [min(idx, max_seq_len - 1) for idx in firstSWindices]
 
     # --- Character Embedding ---
     char_seq = []
