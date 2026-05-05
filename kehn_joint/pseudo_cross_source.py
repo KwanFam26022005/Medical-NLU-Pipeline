@@ -148,7 +148,7 @@ def pseudo_label_ner(samples: list, device: str = "cpu") -> list:
         return samples
 
     print(f"📥 Loading NER model: {NER_MODEL_HF}")
-    tokenizer = AutoTokenizer.from_pretrained(NER_MODEL_HF)
+    tokenizer = AutoTokenizer.from_pretrained(NER_MODEL_HF, use_fast=True)
     
     # Init custom architecture
     model = ViHealthBertCRF(num_labels=len(NER_TAGS))
@@ -175,7 +175,7 @@ def pseudo_label_ner(samples: list, device: str = "cpu") -> list:
                 truncation=True, return_tensors="pt",
                 return_offsets_mapping=True,
             )
-            offset_mapping = inputs.pop("offset_mapping")
+            offset_mapping = inputs.pop("offset_mapping", None)
             inputs = {k: v.to(device) for k, v in inputs.items()}
             
             # ViHealthBertCRF without labels returns decoded tags directly (list of lists of ints)
@@ -184,31 +184,55 @@ def pseudo_label_ner(samples: list, device: str = "cpu") -> list:
         for j, s in enumerate(batch):
             words = s["text"].split()
             n_words = len(words)
-
-            offsets = offset_mapping[j].tolist()
             token_preds = batch_preds[j]  # List of predicted tag IDs
-            token_confs = [1.0] * len(token_preds) # CRF decode doesn't give probabilities natively
+            token_confs = [1.0] * len(token_preds)
 
             word_tags = ["O"] * n_words
             word_confs = [1.0] * n_words
 
-            # Simple alignment: assign first subword's prediction to each word
-            char_pos = 0
-            word_idx = 0
-            for k, (start, end) in enumerate(offsets):
-                if start == 0 and end == 0:
-                    continue  # special token
-                if word_idx >= n_words:
-                    break
-                # Check if this subword starts a new word
-                word_start = sum(len(w) + 1 for w in words[:word_idx])
-                if start >= word_start and word_idx < n_words:
-                    tag_id = token_preds[k]
-                    tag_str = id2tag.get(tag_id, id2tag.get(str(tag_id), "O"))
-                    word_tags[word_idx] = tag_str
-                    word_confs[word_idx] = token_confs[k]
-                    if end >= word_start + len(words[word_idx]):
-                        word_idx += 1
+            # Method 1: use offset_mapping if available
+            if offset_mapping is not None:
+                offsets = offset_mapping[j].tolist()
+                word_idx = 0
+                for k, (start, end) in enumerate(offsets):
+                    if start == 0 and end == 0:
+                        continue
+                    if word_idx >= n_words:
+                        break
+                    word_start = sum(len(w) + 1 for w in words[:word_idx])
+                    if start >= word_start and word_idx < n_words:
+                        tag_id = token_preds[k]
+                        word_tags[word_idx] = id2tag.get(tag_id, id2tag.get(str(tag_id), "O"))
+                        word_confs[word_idx] = token_confs[k]
+                        if end >= word_start + len(words[word_idx]):
+                            word_idx += 1
+                            
+            # Method 2: use word_ids from fast tokenizer
+            elif hasattr(inputs, "word_ids"):
+                try:
+                    word_ids = inputs.word_ids(batch_index=j)
+                    previous_word_idx = None
+                    for k, word_idx in enumerate(word_ids):
+                        if word_idx is None:
+                            continue
+                        if word_idx != previous_word_idx and word_idx < n_words:
+                            tag_id = token_preds[k]
+                            word_tags[word_idx] = id2tag.get(tag_id, id2tag.get(str(tag_id), "O"))
+                            word_confs[word_idx] = token_confs[k]
+                        previous_word_idx = word_idx
+                except Exception:
+                    # Method 3: Fallback 1-to-1
+                    for k in range(min(n_words, len(token_preds) - 1)):
+                        tag_id = token_preds[k + 1] # skip [CLS]
+                        word_tags[k] = id2tag.get(tag_id, id2tag.get(str(tag_id), "O"))
+                        word_confs[k] = token_confs[k + 1]
+            
+            # Method 3: Fallback 1-to-1
+            else:
+                for k in range(min(n_words, len(token_preds) - 1)):
+                    tag_id = token_preds[k + 1] # skip [CLS]
+                    word_tags[k] = id2tag.get(tag_id, id2tag.get(str(tag_id), "O"))
+                    word_confs[k] = token_confs[k + 1]
 
             # Map to our NER tag set
             mapped_tags = []
