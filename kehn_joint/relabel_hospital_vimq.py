@@ -5,8 +5,8 @@ import torch
 import numpy as np
 from tqdm import tqdm
 
-# Trỏ vào thư mục source của ViMQ để lấy các hàm tiện ích
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../ViMQ-main/ViMQ-main/src")))
+# Trỏ vào thư mục source của ViMQ để lấy các hàm tiện ích. Dùng insert(0) để ưu tiên thư viện ViMQ thay vì thư mục model/ hiện tại
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../ViMQ-main/ViMQ-main/src")))
 
 from utils import MODEL_CLASSES, load_tokenizer, get_entity_label, spacy_to_iob
 
