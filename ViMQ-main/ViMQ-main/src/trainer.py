@@ -167,6 +167,9 @@ class Trainer(object):
                 print("Loss/train", tr_loss / global_step, epoch)
             if early_stopping.early_stop:
                 break
+            if iter == self.args.num_iteration - 1:
+                break
+                
             self.train_dataset = ViMQ(self.args,
                                 self.tokenizer,
                                 mode='train',
@@ -174,6 +177,9 @@ class Trainer(object):
                                 iteration=iter)
             train_sampler = RandomSampler(self.train_dataset)
             train_dataloader = DataLoader(self.train_dataset, sampler=train_sampler, batch_size=self.args.train_batch_size)
+            
+        # Lưu model sau khi train xong tất cả các iteration
+        self.save_model()
         return global_step, tr_loss / global_step   
 
     def write_evaluation_result(self, out_file, results):
