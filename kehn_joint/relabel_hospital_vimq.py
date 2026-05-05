@@ -15,9 +15,10 @@ HOSPITAL_DATA_PATH = "data/pseduo_kehn/hospital_kehn.jsonl"
 OUTPUT_DATA_PATH = "data/pseduo_kehn/hospital_kehn_vimq.jsonl"
 
 # ⚠️ QUAN TRỌNG: Sửa đường dẫn này trỏ tới nơi lưu model ViMQ
-# Nếu chạy trên Google Colab (theo hướng dẫn train): MODEL_DIR = "/content/drive/MyDrive/Medical-NLU-Pipeline/outputs/vimq_joint_model"
+# Nếu chạy trên Google Colab (theo hướng dẫn train): 
+MODEL_DIR = "/content/drive/MyDrive/Medical-NLU-Pipeline/outputs/vimq_joint_model"
 # Nếu tải về chạy Local:
-MODEL_DIR = "../outputs/vimq_joint_model"
+# MODEL_DIR = "../outputs/vimq_joint_model"
 VIMQ_DATA_DIR = "../ViMQ-main/ViMQ-main/data"
 
 def load_vimq_model():
