@@ -328,7 +328,7 @@ class Trainer(object):
             raise Exception("Model doesn't exists! Train first!")
 
         try:
-            checkpoint = torch.load(os.path.join(self.args.model_dir, 'checkpoint.pth'), map_location=self.args.device)
+            checkpoint = torch.load(os.path.join(self.args.model_dir, 'checkpoint.pth'), map_location=self.args.device, weights_only=False)
             self.model = self.model_class(
                 config=self.config,
                 args=self.args

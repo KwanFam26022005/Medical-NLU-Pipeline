@@ -27,8 +27,8 @@ def load_vimq_model():
     if not os.path.exists(MODEL_DIR):
         raise FileNotFoundError(f"Thư mục {MODEL_DIR} không tồn tại. Hãy chạy train_vimq_colab.sh trước!")
         
-    # Tải lại arguments lúc huấn luyện
-    args = torch.load(os.path.join(MODEL_DIR, "training_args.bin"), map_location='cpu')
+    # Tải lại arguments lúc huấn luyện (thêm weights_only=False cho PyTorch 2.6+)
+    args = torch.load(os.path.join(MODEL_DIR, "training_args.bin"), map_location='cpu', weights_only=False)
     
     # Ghi đè lại data_dir vì path lúc train có thể khác
     args.data_dir = VIMQ_DATA_DIR
@@ -48,7 +48,7 @@ def load_vimq_model():
     config_class, model_class, _ = MODEL_CLASSES[args.model_type]
     config = config_class.from_pretrained("demdecuong/vihealthbert-base-word")
     model = model_class(config=config, args=args)
-    checkpoint = torch.load(os.path.join(MODEL_DIR, "checkpoint.pth"), map_location=device)
+    checkpoint = torch.load(os.path.join(MODEL_DIR, "checkpoint.pth"), map_location=device, weights_only=False)
     model.load_state_dict(checkpoint['state_dict'])
     model.to(device)
     model.eval()
