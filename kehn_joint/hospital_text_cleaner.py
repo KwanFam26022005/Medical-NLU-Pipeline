@@ -9,9 +9,6 @@ from tqdm import tqdm
 
 def _normalize_spaces(text: str) -> str:
     text = re.sub(r"\s+", " ", text).strip()
-    text = re.sub(r"\s+([?.!,;:])", r"\1", text)
-    text = re.sub(r"([(\[])\s+", r"\1", text)
-    text = re.sub(r"\s+([)\]])", r"\1", text)
     return text.strip()
 
 
@@ -125,8 +122,10 @@ def main():
                 tags2.pop()
                 ids2.pop()
 
+            # IMPORTANT: keep token boundaries stable.
+            # We rebuild text from `words2` and only normalize whitespace.
             cleaned_text = _normalize_spaces(" ".join(words2))
-            cleaned_words = cleaned_text.split() if cleaned_text else []
+            cleaned_words = list(words2)
 
             # Step 3 — Sync words list + realign tags
             # Re-tokenize cleaned text and preserve surviving B/I spans when alignment is unambiguous.
