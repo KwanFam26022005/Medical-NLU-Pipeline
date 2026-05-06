@@ -49,12 +49,14 @@ class JointDataset(Dataset):
         item = self.raw_data[idx]
         words = item["words"]
         ner_tags = item["ner_tags"]
+        token_intent_ids = item.get("token_intent_ids", [item.get("intent_label_id", 0)] * len(words))
 
         # Tokenize word-by-word (giống Trạm 2A bypass word_ids)
         input_ids = [self.tokenizer.cls_token_id]
         ner_label_ids = [-100]  # CLS token
+        intent_label_ids = [-100]
 
-        for word, ner_tag in zip(words, ner_tags):
+        for word, ner_tag, intent_tag in zip(words, ner_tags, token_intent_ids):
             word_tokens = self.tokenizer.tokenize(word)
             if not word_tokens:
                 continue
@@ -64,15 +66,20 @@ class JointDataset(Dataset):
             # First sub-token gets the real label, rest = -100
             ner_label_ids.append(NER2ID.get(ner_tag, 0))
             ner_label_ids.extend([-100] * (len(w_ids) - 1))
+            
+            intent_label_ids.append(intent_tag)
+            intent_label_ids.extend([-100] * (len(w_ids) - 1))
 
         # Add SEP token
         input_ids.append(self.tokenizer.sep_token_id)
         ner_label_ids.append(-100)
+        intent_label_ids.append(-100)
 
         # Truncation
         if len(input_ids) > self.max_seq_len:
             input_ids = input_ids[: self.max_seq_len - 1] + [self.tokenizer.sep_token_id]
             ner_label_ids = ner_label_ids[: self.max_seq_len - 1] + [-100]
+            intent_label_ids = intent_label_ids[: self.max_seq_len - 1] + [-100]
 
         attention_mask = [1] * len(input_ids)
 
@@ -82,6 +89,7 @@ class JointDataset(Dataset):
             "ner_labels": torch.tensor(ner_label_ids, dtype=torch.long),
             "topic_label": torch.tensor(item["topic_label_id"], dtype=torch.long),
             "intent_label": torch.tensor(item["intent_label_id"], dtype=torch.long),
+            "token_intent_ids": torch.tensor(intent_label_ids, dtype=torch.long),
         }
 
 
@@ -103,6 +111,7 @@ class JointCollator:
         ner_labels_list = []
         topic_labels = []
         intent_labels = []
+        token_intent_list = []
 
         for item in batch:
             seq_len = item["input_ids"].size(0)
@@ -119,14 +128,21 @@ class JointCollator:
             )
             topic_labels.append(item["topic_label"])
             intent_labels.append(item["intent_label"])
+            if "token_intent_ids" in item:
+                token_intent_list.append(
+                    torch.cat([item["token_intent_ids"], torch.full((pad_len,), self.ner_pad_id, dtype=torch.long)])
+                )
 
-        return {
+        result = {
             "input_ids": torch.stack(input_ids_list),
             "attention_mask": torch.stack(attention_mask_list),
             "ner_labels": torch.stack(ner_labels_list),
             "topic_labels": torch.stack(topic_labels),
             "intent_labels": torch.stack(intent_labels),
         }
+        if token_intent_list:
+            result["token_intent_ids"] = torch.stack(token_intent_list)
+        return result
 
 
 def create_dataloaders(

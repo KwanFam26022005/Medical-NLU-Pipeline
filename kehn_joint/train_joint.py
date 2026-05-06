@@ -80,6 +80,9 @@ def evaluate(model, dataloader, device, phase="full"):
             topic_labels = batch["topic_labels"].to(device)
             intent_labels = batch["intent_labels"].to(device)
             ner_labels = batch["ner_labels"].to(device)
+            token_intent_ids = batch.get("token_intent_ids", None)
+            if token_intent_ids is not None:
+                token_intent_ids = token_intent_ids.to(device)
 
             output = model(
                 input_ids, attention_mask,
@@ -87,6 +90,7 @@ def evaluate(model, dataloader, device, phase="full"):
                 intent_labels=intent_labels,
                 ner_labels=ner_labels,
                 phase=phase,
+                token_intent_ids=token_intent_ids,
             )
 
             if "loss" in output:
@@ -221,6 +225,9 @@ def train(args):
             topic_labels = batch["topic_labels"].to(device)
             intent_labels = batch["intent_labels"].to(device)
             ner_labels = batch["ner_labels"].to(device)
+            token_intent_ids = batch.get("token_intent_ids", None)
+            if token_intent_ids is not None:
+                token_intent_ids = token_intent_ids.to(device)
 
             # Forward with AMP autocast
             with torch.amp.autocast(device_type=device.type, enabled=use_amp):
@@ -230,6 +237,7 @@ def train(args):
                     intent_labels=intent_labels,
                     ner_labels=ner_labels,
                     phase=phase,
+                    token_intent_ids=token_intent_ids,
                 )
                 loss = output["loss"] / accum_steps
 

@@ -133,9 +133,9 @@ class KEHN(nn.Module):
         logits_ner = self.ner_fc(H_N + H)  # [B, L, n_ner_tag]
 
         # NER probs (pooled for Stack-Propagation)
-        ner_probs_masked = F.softmax(logits_ner, dim=-1) * mask_expanded
-        ner_probs_sum = ner_probs_masked.sum(dim=1)
-        ner_probs_pooled = ner_probs_sum / mask_sum  # [B, n_ner_tag]
+        ner_probs = F.softmax(logits_ner, dim=-1)
+        ner_probs_masked = ner_probs.masked_fill(mask_expanded == 0, float('-inf'))
+        ner_probs_pooled = ner_probs_masked.max(dim=1)[0]  # [B, n_ner_tag]
 
         return logits_intent_token, intent_probs_sentence, logits_ner, ner_probs_pooled
 
@@ -178,6 +178,7 @@ class KEHN(nn.Module):
         intent_labels=None,
         ner_labels=None,
         phase="full",
+        token_intent_ids=None,
     ):
         """
         Forward pass qua 3 tầng.
@@ -189,6 +190,7 @@ class KEHN(nn.Module):
             intent_labels: [B] (long) — Intent class indices
             ner_labels: [B, L] (long) — NER BIO tag indices (-100 for ignored)
             phase: "topic_only" | "mining_only" | "joint_no_prop" | "full"
+            token_intent_ids: [B, L] (long) — Token-level intent tags (-100 for ignored)
         
         Returns:
             dict with logits_topic, logits_intent, logits_ner, loss (if labels provided)
@@ -217,6 +219,7 @@ class KEHN(nn.Module):
                 logits_topic, logits_intent_token, logits_ner,
                 topic_labels, intent_labels, ner_labels,
                 attention_mask, phase,
+                token_intent_ids=token_intent_ids,
             )
             output["loss"] = loss
 
@@ -225,6 +228,7 @@ class KEHN(nn.Module):
     def _compute_loss(
         self, logits_topic, logits_intent_token, logits_ner,
         topic_labels, intent_labels, ner_labels, mask, phase,
+        token_intent_ids=None,
     ):
         """Compute joint loss theo curriculum phase."""
         from .._get_loss_weights import get_loss_weights
@@ -241,11 +245,15 @@ class KEHN(nn.Module):
             loss_topic = loss_fn(logits_topic, topic_labels)
             total_loss = total_loss + weights["topic"] * loss_topic
 
-        # Intent loss (Token-level CE, broadcast sentence label to all tokens)
+        # Intent loss (Token-level CE)
         if weights["intent"] > 0 and intent_labels is not None:
             B, L, C = logits_intent_token.shape
-            # Broadcast sentence-level intent label to all tokens
-            intent_expanded = intent_labels.unsqueeze(1).expand(B, L)  # [B, L]
+            if token_intent_ids is not None:
+                intent_expanded = token_intent_ids
+            else:
+                # Broadcast sentence-level intent label to all tokens
+                intent_expanded = intent_labels.unsqueeze(1).expand(B, L)  # [B, L]
+                
             # Flatten và mask padding
             logits_flat = logits_intent_token.reshape(-1, C)  # [B*L, C]
             labels_flat = intent_expanded.reshape(-1)  # [B*L]
@@ -253,7 +261,7 @@ class KEHN(nn.Module):
 
             if mask_flat.any():
                 loss_intent = F.cross_entropy(
-                    logits_flat[mask_flat], labels_flat[mask_flat]
+                    logits_flat[mask_flat], labels_flat[mask_flat], ignore_index=-100
                 )
                 total_loss = total_loss + weights["intent"] * loss_intent
 
