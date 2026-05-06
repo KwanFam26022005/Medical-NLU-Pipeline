@@ -46,7 +46,11 @@ OUT_MERGED_PATH = PSEUDO_DIR / "merged_kehn_fused.jsonl"
 # Confidence gates for hospital pseudo data
 MIN_TOPIC_CONFIDENCE = 1.0      # topic is human-labeled from topic_train
 MIN_INTENT_CONFIDENCE = 0.85    # from intent pseudo model
-MIN_NER_CONFIDENCE = 1.0        # ViMQ relabel currently emits fixed 1.0
+# ViMQ relabel uses span probabilities from decode_spans_from_score().
+# Keep the gating thresholds consistent with the decode min_prob to avoid
+# filtering everything due to averaging/softmax range.
+NER_SPAN_MIN_PROB = 0.85
+MIN_NER_CONFIDENCE = NER_SPAN_MIN_PROB
 
 
 def split_sentences(text: str) -> List[str]:
@@ -261,7 +265,7 @@ def relabel_ner_vimq(samples: List[Dict]) -> List[Dict]:
             score, _ = model(**inputs)
         score_np = score.detach().cpu().numpy()
         spans_with_conf = decode_spans_from_score(
-            score_np, index2label, seq_len, min_prob=0.85, max_span_len=8
+            score_np, index2label, seq_len, min_prob=NER_SPAN_MIN_PROB, max_span_len=8
         )
         spans = [[s, e, t] for s, e, t, _ in spans_with_conf]
         raw_tags = spacy_to_iob(spans, seq_len)
