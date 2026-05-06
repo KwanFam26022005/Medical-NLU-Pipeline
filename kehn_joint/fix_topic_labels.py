@@ -31,41 +31,53 @@ def main():
     in_path = Path(args.input)
     out_path = Path(args.output)
 
+    if not in_path.exists():
+        raise FileNotFoundError(f"--input not found: {in_path}")
+
+    out_parent = out_path.parent
+    if out_parent and not out_parent.exists():
+        out_parent.mkdir(parents=True, exist_ok=True)
+
     remapped = 0
     dropped = 0
     passed = 0
     total = 0
 
-    with in_path.open("r", encoding="utf-8") as fin, out_path.open("w", encoding="utf-8") as fout:
-        for idx, line in enumerate(tqdm(fin, desc="fix_topic_labels", unit="lines")):
-            s = line.strip()
-            if not s:
-                continue
-            total += 1
-            rec = json.loads(s)
+    try:
+        with in_path.open("r", encoding="utf-8") as fin, out_path.open("w", encoding="utf-8") as fout:
+            for idx, line in enumerate(tqdm(fin, desc="fix_topic_labels", unit="lines")):
+                s = line.strip()
+                if not s:
+                    continue
+                total += 1
+                rec = json.loads(s)
 
-            topic = rec.get("topic_label")
-            if topic == "traditional_medicine":
-                dropped += 1
-                print(f"[DROP] idx={idx} topic_label=traditional_medicine", file=sys.stdout)
-                continue
+                topic = rec.get("topic_label")
+                if topic == "traditional_medicine":
+                    dropped += 1
+                    print(f"[DROP] idx={idx} topic_label=traditional_medicine", file=sys.stdout)
+                    continue
 
-            if topic == "oncology":
-                rec["topic_label"] = "internal_medicine"
-                topic = rec["topic_label"]
-                remapped += 1
+                if topic == "oncology":
+                    rec["topic_label"] = "internal_medicine"
+                    topic = rec["topic_label"]
+                    remapped += 1
 
-            if topic not in topic2id:
-                raise ValueError(f"Topic not in TOPIC2ID at idx={idx}: topic_label={topic!r}")
+                if topic not in topic2id:
+                    raise ValueError(f"Topic not in TOPIC2ID at idx={idx}: topic_label={topic!r}")
 
-            rec["topic_label_id"] = int(topic2id[topic])
+                rec["topic_label_id"] = int(topic2id[topic])
 
-            tid = rec["topic_label_id"]
-            if not (0 <= tid < int(n_topic)):
-                raise ValueError(f"topic_label_id out of range at idx={idx}: {tid} (n_topic={n_topic})")
+                tid = rec["topic_label_id"]
+                if not (0 <= tid < int(n_topic)):
+                    raise ValueError(f"topic_label_id out of range at idx={idx}: {tid} (n_topic={n_topic})")
 
-            passed += 1
-            fout.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                passed += 1
+                fout.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception as e:
+        raise RuntimeError(
+            f"Failed during file processing. input={in_path} output={out_path} err={type(e).__name__}: {e}"
+        ) from e
 
     print(
         f"[DONE] fix_topic_labels total={total} remapped={remapped} dropped={dropped} asserted_ok={passed}",
