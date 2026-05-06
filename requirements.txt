@@ -13,3 +13,4 @@ ahocorasick-rs>=0.22.0
 pandas>=2.0.0
 numpy>=1.24.0
 pytorch-crf
+openai>=1.40.0
