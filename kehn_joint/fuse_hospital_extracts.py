@@ -12,6 +12,7 @@ Goals:
 
 from __future__ import annotations
 
+import argparse
 import json
 import random
 import re
@@ -121,6 +122,44 @@ def tokenize_text(text: str) -> List[str]:
     return punct_spaced.split()
 
 
+def chunk_long_words(words: List[str], max_words: int = 120) -> List[str]:
+    """
+    Split long token sequences by punctuation boundaries to reduce truncation risk.
+    If no good boundary exists, hard-cut by max_words.
+    """
+    if len(words) <= max_words:
+        return words
+
+    boundary_tokens = {".", "!", "?", ";", ":"}
+    chunks: List[List[str]] = []
+    cur: List[str] = []
+
+    for w in words:
+        cur.append(w)
+        if len(cur) >= max_words:
+            # try nearest right boundary within current chunk
+            cut_at = -1
+            for i in range(len(cur) - 1, max(-1, len(cur) - 25), -1):
+                if cur[i] in boundary_tokens:
+                    cut_at = i
+                    break
+            if cut_at >= 0:
+                chunks.append(cur[: cut_at + 1])
+                cur = cur[cut_at + 1 :]
+            else:
+                chunks.append(cur[:max_words])
+                cur = cur[max_words:]
+
+    if cur:
+        chunks.append(cur)
+
+    # Keep at most first 2 chunks to avoid over-long narratives dominating.
+    merged = []
+    for ch in chunks[:2]:
+        merged.extend(ch)
+    return merged[: max_words * 2]
+
+
 def remap_topic(topic: str) -> str | None:
     if topic in TOPIC_DROP:
         return None
@@ -141,6 +180,35 @@ def normalize_ner_tag(tag: str) -> str:
     if tag in NER2ID:
         return tag
     return "O"
+
+
+def repair_bio_tags(tags: List[str]) -> List[str]:
+    """Fix invalid BIO transitions produced by span-to-IOB conversion noise."""
+    repaired: List[str] = []
+    prev_type = None
+    for tag in tags:
+        if tag == "O":
+            repaired.append("O")
+            prev_type = None
+            continue
+        if "-" not in tag:
+            repaired.append("O")
+            prev_type = None
+            continue
+        prefix, ent_type = tag.split("-", 1)
+        if prefix == "B":
+            repaired.append(tag)
+            prev_type = ent_type
+        elif prefix == "I":
+            if prev_type == ent_type:
+                repaired.append(tag)
+            else:
+                repaired.append(f"B-{ent_type}")
+            prev_type = ent_type
+        else:
+            repaired.append("O")
+            prev_type = None
+    return repaired
 
 
 def decode_spans_from_score(
@@ -209,7 +277,7 @@ def decode_spans_from_score(
     return selected
 
 
-def load_topic_samples() -> List[Dict]:
+def load_topic_samples(max_words: int = 120) -> List[Dict]:
     with open(TOPIC_TRAIN_PATH, "r", encoding="utf-8") as f:
         rows = json.load(f)
 
@@ -225,6 +293,7 @@ def load_topic_samples() -> List[Dict]:
         cleaned = normalize_text_surface(text)
         compact = compact_repetitive_text(cleaned)
         words = tokenize_text(compact)
+        words = chunk_long_words(words, max_words=max_words)
         if not words:
             continue
         samples.append(
@@ -270,6 +339,7 @@ def relabel_ner_vimq(samples: List[Dict]) -> List[Dict]:
         spans = [[s, e, t] for s, e, t, _ in spans_with_conf]
         raw_tags = spacy_to_iob(spans, seq_len)
         ner_tags = [normalize_ner_tag(t) for t in raw_tags]
+        ner_tags = repair_bio_tags(ner_tags)
 
         item["ner_tags"] = ner_tags
         item["ner_tag_ids"] = [NER2ID.get(t, 0) for t in ner_tags]
@@ -315,6 +385,23 @@ def pass_confidence_filter(item: Dict) -> bool:
     )
 
 
+def pass_quality_filter(item: Dict, min_entity_ratio: float = 0.01) -> bool:
+    """
+    Extra quality gate:
+    - keep samples containing at least one entity
+    - avoid too-sparse NER outputs (often decode failures on long/noisy text)
+    """
+    tags = item.get("ner_tags", [])
+    words = item.get("words", [])
+    if not tags or not words:
+        return False
+    if len(tags) != len(words):
+        return False
+    non_o = sum(1 for t in tags if t != "O")
+    ratio = non_o / max(1, len(tags))
+    return non_o > 0 and ratio >= min_entity_ratio
+
+
 def write_jsonl(path: Path, rows: List[Dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
@@ -334,8 +421,21 @@ def load_jsonl(path: Path) -> List[Dict]:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Fuse hospital extracts into KEHN format")
+    parser.add_argument("--smoke_limit", type=int, default=None, help="Limit number of hospital samples")
+    parser.add_argument("--max_words", type=int, default=120, help="Max words before chunking long samples")
+    parser.add_argument(
+        "--min_entity_ratio",
+        type=float,
+        default=0.01,
+        help="Minimum ratio of non-O tags to keep sample",
+    )
+    args = parser.parse_args()
+
     print("1) Load + compact topic_train...")
-    hospital = load_topic_samples()
+    hospital = load_topic_samples(max_words=args.max_words)
+    if args.smoke_limit is not None:
+        hospital = hospital[: args.smoke_limit]
     print(f"   Loaded {len(hospital)} hospital samples")
 
     print("2) Pseudo-label intent...")
@@ -351,12 +451,15 @@ def main() -> None:
     hospital = [s for s in hospital if validate_sample(s)]
     after_validate = len(hospital)
     hospital = [s for s in hospital if pass_confidence_filter(s)]
+    after_conf = len(hospital)
+    hospital = [s for s in hospital if pass_quality_filter(s, min_entity_ratio=args.min_entity_ratio)]
     print(f"   After schema validation: {after_validate}/{before_filter}")
     print(
         "   After confidence filter "
         f"(topic>={MIN_TOPIC_CONFIDENCE}, intent>={MIN_INTENT_CONFIDENCE}, ner>={MIN_NER_CONFIDENCE}): "
-        f"{len(hospital)}/{after_validate}"
+        f"{after_conf}/{after_validate}"
     )
+    print(f"   After quality filter (min_entity_ratio>={args.min_entity_ratio}): {len(hospital)}/{after_conf}")
 
     print("5) Save hospital fused dataset...")
     write_jsonl(OUT_HOSPITAL_PATH, hospital)
