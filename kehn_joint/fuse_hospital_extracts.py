@@ -107,10 +107,29 @@ def compact_repetitive_text(text: str, similarity_threshold: float = 0.92) -> st
         if not is_near_dup:
             kept.append(sent)
             seen_norm.append(norm)
-    return " ".join(kept).strip()
+    merged = " ".join(kept).strip()
+
+    # Handle repeated leading phrase without punctuation, e.g.
+    # "trẻ ít đi ngoài có sao không trẻ ít đi ngoài có sao không ? ..."
+    head = re.match(
+        r"^\s*(?P<p>[\w_àáạảãăắằẳẵặâấầẩẫậđèéẹẻẽêếềểễệ"
+        r"ìíịỉĩòóọỏõôốồổỗộơớờởỡợùúụủũưứừửữựỳýỵỷỹ\s,-]{8,70})\s+(?P=p)\s*([?.!,]|$)",
+        merged,
+        flags=re.IGNORECASE,
+    )
+    if head:
+        phrase = re.sub(r"\s+", " ", head.group("p")).strip()
+        merged = re.sub(
+            r"^\s*" + re.escape(phrase) + r"\s+" + re.escape(phrase) + r"\s*",
+            phrase + " ",
+            merged,
+            count=1,
+            flags=re.IGNORECASE,
+        ).strip()
+    return merged
 
 
-def tokenize_text(text: str) -> List[str]:
+def tokenize_text(text: str, strict_tokenizer: bool = False) -> List[str]:
     # Keep phrase connectors with underscore when they look medical terms.
     # But normalize some noisy connective forms that are usually not entities.
     text = re.sub(r"\bcó_ăn\b", "có ăn", text)
@@ -119,6 +138,10 @@ def tokenize_text(text: str) -> List[str]:
     punct_spaced = re.sub(r"\s+", " ", punct_spaced).strip()
     if ViTokenizer is not None:
         return ViTokenizer.tokenize(punct_spaced).split()
+    if strict_tokenizer:
+        raise RuntimeError(
+            "pyvi is not available. Install pyvi or disable --strict_tokenizer."
+        )
     return punct_spaced.split()
 
 
@@ -211,6 +234,47 @@ def repair_bio_tags(tags: List[str]) -> List[str]:
     return repaired
 
 
+def load_ner_lexicon(path: str | None) -> Dict[str, str]:
+    """
+    Optional external lexicon, JSON format:
+    {
+      "chảy_máu": "SYM",
+      "nội_soi": "PRO",
+      "paracetamol": "DRU"
+    }
+    """
+    if not path:
+        return {}
+    p = Path(path)
+    if not p.exists():
+        raise FileNotFoundError(f"NER lexicon file not found: {path}")
+    with open(p, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    out: Dict[str, str] = {}
+    for k, v in data.items():
+        key = str(k).strip().lower()
+        ent = str(v).strip().upper()
+        if ent in {"SYM", "PRO", "DRU"} and key:
+            out[key] = ent
+    return out
+
+
+def apply_ner_lexicon(words: List[str], tags: List[str], ner_lexicon: Dict[str, str]) -> List[str]:
+    """
+    Recover common symptom entities ViMQ may miss in long enumerations.
+    Only upgrades O spans; never overwrites existing non-O predictions.
+    """
+    if len(words) != len(tags):
+        return tags
+    out = tags[:]
+    for i, w in enumerate(words):
+        key = str(w).lower()
+        ent = ner_lexicon.get(key)
+        if ent and out[i] == "O":
+            out[i] = f"B-{ent}"
+    return out
+
+
 def decode_spans_from_score(
     score_4d: np.ndarray,
     index2label: Dict[int, str],
@@ -277,7 +341,7 @@ def decode_spans_from_score(
     return selected
 
 
-def load_topic_samples(max_words: int = 120) -> List[Dict]:
+def load_topic_samples(max_words: int = 120, strict_tokenizer: bool = False) -> List[Dict]:
     with open(TOPIC_TRAIN_PATH, "r", encoding="utf-8") as f:
         rows = json.load(f)
 
@@ -292,7 +356,7 @@ def load_topic_samples(max_words: int = 120) -> List[Dict]:
             continue
         cleaned = normalize_text_surface(text)
         compact = compact_repetitive_text(cleaned)
-        words = tokenize_text(compact)
+        words = tokenize_text(compact, strict_tokenizer=strict_tokenizer)
         words = chunk_long_words(words, max_words=max_words)
         if not words:
             continue
@@ -309,7 +373,8 @@ def load_topic_samples(max_words: int = 120) -> List[Dict]:
     return samples
 
 
-def relabel_ner_vimq(samples: List[Dict]) -> List[Dict]:
+def relabel_ner_vimq(samples: List[Dict], ner_lexicon: Dict[str, str] | None = None) -> List[Dict]:
+    ner_lexicon = ner_lexicon or {}
     model, tokenizer, args, index2label, char_vocab, device = load_vimq_model()
 
     for item in samples:
@@ -340,6 +405,7 @@ def relabel_ner_vimq(samples: List[Dict]) -> List[Dict]:
         raw_tags = spacy_to_iob(spans, seq_len)
         ner_tags = [normalize_ner_tag(t) for t in raw_tags]
         ner_tags = repair_bio_tags(ner_tags)
+        ner_tags = apply_ner_lexicon(words, ner_tags, ner_lexicon)
 
         item["ner_tags"] = ner_tags
         item["ner_tag_ids"] = [NER2ID.get(t, 0) for t in ner_tags]
@@ -430,10 +496,21 @@ def main() -> None:
         default=0.01,
         help="Minimum ratio of non-O tags to keep sample",
     )
+    parser.add_argument(
+        "--strict_tokenizer",
+        action="store_true",
+        help="Fail if pyvi is unavailable instead of whitespace fallback",
+    )
+    parser.add_argument(
+        "--ner_lexicon_path",
+        type=str,
+        default=None,
+        help="Optional JSON path for lexicon-based NER recovery",
+    )
     args = parser.parse_args()
 
     print("1) Load + compact topic_train...")
-    hospital = load_topic_samples(max_words=args.max_words)
+    hospital = load_topic_samples(max_words=args.max_words, strict_tokenizer=args.strict_tokenizer)
     if args.smoke_limit is not None:
         hospital = hospital[: args.smoke_limit]
     print(f"   Loaded {len(hospital)} hospital samples")
@@ -443,7 +520,10 @@ def main() -> None:
     hospital = pseudo_label_intent(hospital, device=device)
 
     print("3) Relabel NER with ViMQ...")
-    hospital = relabel_ner_vimq(hospital)
+    ner_lexicon = load_ner_lexicon(args.ner_lexicon_path)
+    if ner_lexicon:
+        print(f"   Loaded NER lexicon: {len(ner_lexicon)} entries")
+    hospital = relabel_ner_vimq(hospital, ner_lexicon=ner_lexicon)
 
     print("4) Finalize fields + validate...")
     hospital = finalize_intent_fields(hospital)
