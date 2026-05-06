@@ -150,12 +150,29 @@ def decode_spans_from_score(
     Decode spans from ViMQ score tensor with confidence gating + non-overlap.
     This avoids dense noisy spans produced by plain argmax over all i,j cells.
     """
-    score = score_4d[0]  # (L, L, C)
+    # ViMQ forward thường trả về shape (B, L, L, C) nhưng trong một số trường hợp
+    # có thể là (L, L, C) (không có batch). Chuẩn hóa về (L_i, L_j, C).
+    if score_4d.ndim == 4:
+        score = score_4d[0]
+    elif score_4d.ndim == 3:
+        score = score_4d
+    else:
+        raise ValueError(f"Unexpected ViMQ score shape: {score_4d.shape}")
+
+    # score expected: (L_i, L_j, C)
+    l_i, l_j = score.shape[0], score.shape[1]
+
+    # Inference output can be capped by model max_seq_len (e.g., 256),
+    # while raw sample seq_len may be longer.
+    effective_len = min(int(seq_len), int(l_i), int(l_j))
     candidates = []
 
     # Candidate extraction
-    for i in range(seq_len):
-        j_max = min(seq_len - 1, i + max_span_len - 1)
+    for i in range(effective_len):
+        # Clamp theo kích thước thật của trục j để tránh out-of-bounds
+        j_max = min(int(l_j - 1), int(effective_len - 1), i + max_span_len - 1)
+        if j_max < i:
+            continue
         for j in range(i, j_max + 1):
             logits = score[i, j]
             # Stable softmax
