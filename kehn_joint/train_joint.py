@@ -142,16 +142,44 @@ def train(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"🖥️  Device: {device}")
 
-    # Load metadata cho class weights
+    # DataLoaders
+    print(f"\n📂 Loading data...")
+    backbone = MODEL_CONFIG.get(args.backbone, MODEL_CONFIG["phobert"])
+    train_loader, val_loader, test_loader = create_dataloaders(
+        tokenizer_name=backbone,
+        batch_size=args.batch_size,
+        max_seq_len=TRAIN_CONFIG["max_seq_len"],
+    )
+
+    # Load metadata cho class weights (hoặc tính tự động từ tập train)
     meta_path = JOINT_DATA_DIR / "metadata.json"
     topic_class_weights = None
     if meta_path.exists():
         with open(meta_path, "r", encoding="utf-8") as f:
             meta = json.load(f)
         topic_class_weights = meta.get("topic_class_weights")
+    else:
+        print("   metadata.json not found. Calculating weights from train_loader...")
+        from collections import Counter
+        topic_counts = Counter()
+        for batch in train_loader:
+            topic_counts.update(batch["topic_labels"].tolist())
+        
+        n_topics = MODEL_CONFIG["n_topic"]
+        weights = []
+        total = sum(topic_counts.values())
+        for i in range(n_topics):
+            count = topic_counts.get(i, 0)
+            if count > 0:
+                weights.append(total / count)
+            else:
+                weights.append(1.0)
+        
+        min_w = min(weights)
+        topic_class_weights = [w / min_w for w in weights]
+        print(f"   Calculated Topic Weights: {topic_class_weights}")
 
     # Build model
-    backbone = MODEL_CONFIG.get(args.backbone, MODEL_CONFIG["phobert"])
     print(f"🤖 Building KEHN with backbone: {backbone}")
     model = build_model(backbone, topic_class_weights, device)
 
@@ -159,14 +187,6 @@ def train(args):
     n_trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"   Total params: {n_params:,}")
     print(f"   Trainable:    {n_trainable:,}")
-
-    # DataLoaders
-    print(f"\n📂 Loading data...")
-    train_loader, val_loader, test_loader = create_dataloaders(
-        tokenizer_name=backbone,
-        batch_size=args.batch_size,
-        max_seq_len=TRAIN_CONFIG["max_seq_len"],
-    )
 
     # Optimizer & Scheduler
     optimizer = AdamW(

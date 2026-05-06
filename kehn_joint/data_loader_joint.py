@@ -37,8 +37,15 @@ class JointDataset(Dataset):
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
 
         # Load data
-        with open(data_path, "r", encoding="utf-8") as f:
-            self.raw_data = json.load(f)
+        if data_path.endswith('.jsonl'):
+            self.raw_data = []
+            with open(data_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        self.raw_data.append(json.loads(line))
+        else:
+            with open(data_path, "r", encoding="utf-8") as f:
+                self.raw_data = json.load(f)
 
         print(f"[JointDataset] Loaded {len(self.raw_data)} samples from {Path(data_path).name}")
 
@@ -154,9 +161,17 @@ def create_dataloaders(
     """Tạo train/val/test DataLoaders."""
     data_dir = Path(data_dir) if data_dir else JOINT_DATA_DIR
 
-    train_ds = JointDataset(data_dir / "joint_train.json", tokenizer_name, max_seq_len)
-    val_ds = JointDataset(data_dir / "joint_val.json", tokenizer_name, max_seq_len)
-    test_ds = JointDataset(data_dir / "joint_test.json", tokenizer_name, max_seq_len)
+    def get_path(split_name):
+        # Ưu tiên .jsonl trong splits/, fallback về .json cũ
+        if (data_dir / f"{split_name}.jsonl").exists():
+            return str(data_dir / f"{split_name}.jsonl")
+        elif (data_dir / f"joint_{split_name}.json").exists():
+            return str(data_dir / f"joint_{split_name}.json")
+        return str(data_dir / f"{split_name}.json")
+
+    train_ds = JointDataset(get_path("train"), tokenizer_name, max_seq_len)
+    val_ds = JointDataset(get_path("val"), tokenizer_name, max_seq_len)
+    test_ds = JointDataset(get_path("test"), tokenizer_name, max_seq_len)
 
     # Get pad token id from tokenizer
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
