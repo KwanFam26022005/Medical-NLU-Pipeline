@@ -35,7 +35,7 @@ class KEHN(nn.Module):
     def __init__(
         self,
         backbone_name: str,
-        n_topic: int = 18,
+        n_topic: int = 17,
         n_intent: int = 4,
         n_ner_tag: int = 7,
         hidden_dim: int = 768,

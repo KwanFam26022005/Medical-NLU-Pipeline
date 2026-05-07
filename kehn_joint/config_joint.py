@@ -56,7 +56,7 @@ TOPIC_LABELS = [
     "ent", "gastroenterology", "internal_medicine", "neurology",
     "nutrition", "obstetrics_gynecology", "ophthalmology",
     "orthopedics", "pediatrics", "reproductive_endocrinology",
-    "rheumatology", "urology", "oncology"  # <--- THÊM Ở ĐÂY
+    "rheumatology", "urology", "oncology" 
 ]
 
 # Remap rules applied during preprocessing (oncology → internal_medicine)

@@ -1,0 +1,157 @@
+{
+  "dataset_name": "medical_kehn_cleaned",
+  "language": "vi",
+  "format": "jsonl",
+  "tasks": [
+    "ner",
+    "intent_classification",
+    "topic_classification"
+  ],
+  "num_samples": 16454,
+  "total_tokens": 913581,
+  "avg_tokens_per_sample": 55.52,
+  "max_tokens": 481,
+  "min_tokens": 2,
+  "avg_characters_per_sample": 259.7,
+  "source_distribution": {
+    "hospital": 9687,
+    "vimq": 6767
+  },
+  "topic_distribution": {
+    "pediatrics": 3013,
+    "obstetrics_gynecology": 3092,
+    "cardiology": 1669,
+    "urology": 866,
+    "reproductive_endocrinology": 1353,
+    "internal_medicine": 1802,
+    "nutrition": 106,
+    "neurology": 895,
+    "orthopedics": 1537,
+    "gastroenterology": 853,
+    "dentistry": 254,
+    "dermatology": 181,
+    "rheumatology": 190,
+    "ent": 297,
+    "ophthalmology": 176,
+    "endocrinology": 153,
+    "oncology": 17
+  },
+  "intent_distribution": {
+    "method_diagnosis": 7594,
+    "severity": 3484,
+    "cause": 1156,
+    "treatment": 4220
+  },
+  "ner_distribution": {
+    "O": 661068,
+    "B-PRO": 17914,
+    "I-PRO": 17226,
+    "B-SYM": 84446,
+    "I-SYM": 99214,
+    "B-DUR": 12421,
+    "I-DUR": 12421,
+    "B-DRU": 2465,
+    "I-DRU": 2748,
+    "B-SEV": 3658
+  },
+  "ner_labels": [
+    "B-DRU",
+    "B-DUR",
+    "B-PRO",
+    "B-SEV",
+    "B-SYM",
+    "I-DRU",
+    "I-DUR",
+    "I-PRO",
+    "I-SYM",
+    "O"
+  ],
+  "ner2id": {
+    "B-DRU": 0,
+    "B-DUR": 1,
+    "B-PRO": 2,
+    "B-SEV": 3,
+    "B-SYM": 4,
+    "I-DRU": 5,
+    "I-DUR": 6,
+    "I-PRO": 7,
+    "I-SYM": 8,
+    "O": 9
+  },
+  "id2ner": {
+    "0": "B-DRU",
+    "1": "B-DUR",
+    "2": "B-PRO",
+    "3": "B-SEV",
+    "4": "B-SYM",
+    "5": "I-DRU",
+    "6": "I-DUR",
+    "7": "I-PRO",
+    "8": "I-SYM",
+    "9": "O"
+  },
+  "topic2id": {
+    "cardiology": 0,
+    "dentistry": 1,
+    "dermatology": 2,
+    "endocrinology": 3,
+    "ent": 4,
+    "gastroenterology": 5,
+    "internal_medicine": 6,
+    "neurology": 7,
+    "nutrition": 8,
+    "obstetrics_gynecology": 9,
+    "oncology": 10,
+    "ophthalmology": 11,
+    "orthopedics": 12,
+    "pediatrics": 13,
+    "reproductive_endocrinology": 14,
+    "rheumatology": 15,
+    "urology": 16
+  },
+  "intent2id": {
+    "cause": 0,
+    "method_diagnosis": 1,
+    "severity": 2,
+    "treatment": 3
+  },
+  "entity_types": [
+    "PRO",
+    "SYM",
+    "DUR",
+    "DRU",
+    "SEV"
+  ],
+  "entity_distribution": {
+    "PRO": 17914,
+    "SYM": 84446,
+    "DUR": 12421,
+    "DRU": 2465,
+    "SEV": 3658
+  },
+  "avg_entity_density": 0.3045,
+  "bio_scheme": "BIO",
+  "bio_errors": 1010,
+  "broken_samples": 0,
+  "validation_errors": {},
+  "o_tag_ratio_percent": 72.36,
+  "avg_ner_confidence": 1.0,
+  "avg_intent_confidence": 0.9944,
+  "avg_topic_confidence": 0.9881,
+  "recommended_models": [
+    "vinai/phobert-base",
+    "vinai/phobert-large",
+    "xlm-roberta-base",
+    "xlm-roberta-large",
+    "bert-base-multilingual-cased"
+  ],
+  "recommended_max_length": 138,
+  "dataset_hash": "9de214703fa773e7cec3011c821477e05e32c1c3d4eab44ec9b842eb71efab53",
+  "compatible_with": [
+    "PhoBERT",
+    "XLM-R",
+    "BERT",
+    "Transformers",
+    "HuggingFace Datasets"
+  ]
+}
