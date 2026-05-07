@@ -145,6 +145,17 @@ def train(args):
     # DataLoaders
     print(f"\n📂 Loading data...")
     backbone = MODEL_CONFIG.get(args.backbone, MODEL_CONFIG["phobert"])
+    
+    # Logic xác định hidden_dim động
+    current_hidden_dim = MODEL_CONFIG["hidden_dim"]
+    if "large" in backbone:
+        current_hidden_dim = MODEL_CONFIG.get("xlmr_hidden_dim", 1024)
+        print(f"✨ Detecting Large model, setting hidden_dim to {current_hidden_dim}")
+
+    # Cập nhật MODEL_CONFIG tạm thời để build_model sử dụng đúng dimension
+    MODEL_CONFIG["hidden_dim"] = current_hidden_dim
+
+    # DataLoaders (truyền backbone vào để tokenizer đồng nhất)
     train_loader, val_loader, test_loader = create_dataloaders(
         tokenizer_name=backbone,
         batch_size=args.batch_size,
