@@ -72,9 +72,10 @@ MODEL_CONFIG = {
     # Backbone (benchmark cả 2)
     "phobert": "vinai/phobert-base-v2",
     "vihealthbert": "demdecuong/vihealthbert-base-word",
-
+    "xlmr_large": "FacebookAI/xlm-roberta-large", # Thêm backbone mới
     # Architecture
     "hidden_dim": 768,
+    "xlmr_hidden_dim": 1024, # Dimension cho Large model
     "num_co_interactive_blocks": 2,
     "num_attention_heads": 8,
     "attention_dropout": 0.1,
