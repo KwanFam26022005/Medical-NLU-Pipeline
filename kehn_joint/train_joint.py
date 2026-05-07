@@ -142,22 +142,21 @@ def train(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"🖥️  Device: {device}")
 
-    # DataLoaders
-    print(f"\n📂 Loading data...")
-    backbone = MODEL_CONFIG.get(args.backbone, MODEL_CONFIG["phobert"])
+    # 1. Xác định backbone thực tế
+    backbone_path = MODEL_CONFIG.get(args.backbone, MODEL_CONFIG["phobert"])
     
-    # Logic xác định hidden_dim động
-    current_hidden_dim = MODEL_CONFIG["hidden_dim"]
-    if "large" in backbone:
-        current_hidden_dim = MODEL_CONFIG.get("xlmr_hidden_dim", 1024)
-        print(f"✨ Detecting Large model, setting hidden_dim to {current_hidden_dim}")
+    # 2. Cập nhật Hidden Dimension động cho E6
+    if args.backbone == "xlmr_large":
+        # XLM-R Large dùng 1024, PhoBERT/ViHealth dùng 768
+        MODEL_CONFIG["hidden_dim"] = 1024 
+        print(f"✨ Detected XLM-R Large: Setting hidden_dim to 1024")
+    else:
+        MODEL_CONFIG["hidden_dim"] = 768
 
-    # Cập nhật MODEL_CONFIG tạm thời để build_model sử dụng đúng dimension
-    MODEL_CONFIG["hidden_dim"] = current_hidden_dim
-
-    # DataLoaders (truyền backbone vào để tokenizer đồng nhất)
+    print(f"\n📂 Loading data...")
+    # 3. DataLoaders (truyền backbone_path thay vì args.backbone)
     train_loader, val_loader, test_loader = create_dataloaders(
-        tokenizer_name=backbone,
+        tokenizer_name=backbone_path, # <--- Dùng đường dẫn HF thực tế
         batch_size=args.batch_size,
         max_seq_len=TRAIN_CONFIG["max_seq_len"],
     )
@@ -191,8 +190,8 @@ def train(args):
         print(f"   Calculated Topic Weights: {topic_class_weights}")
 
     # Build model
-    print(f"🤖 Building KEHN with backbone: {backbone}")
-    model = build_model(backbone, topic_class_weights, device)
+    print(f"🤖 Building KEHN with backbone: {backbone_path}")
+    model = build_model(backbone_path, topic_class_weights, device)
 
     n_params = sum(p.numel() for p in model.parameters())
     n_trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -232,7 +231,7 @@ def train(args):
 
     print(f"\n{'=' * 60}")
     print(f"🚀 Training KEHN — Experiment: {args.exp_name}")
-    print(f"   Backbone: {backbone}")
+    print(f"   Backbone: {backbone_path}")
     print(f"   Epochs: {args.epochs}, Batch: {args.batch_size}, LR: {args.lr}")
     print(f"   FP16: {use_amp}, Grad Accum: {accum_steps}x (effective batch={args.batch_size * accum_steps})")
     print(f"{'=' * 60}\n")
@@ -338,7 +337,7 @@ def train(args):
     # Save results
     results = {
         "experiment": args.exp_name,
-        "backbone": backbone,
+        "backbone": backbone_path,
         "best_epoch": best_epoch,
         "best_val_topic_f1": best_metric,
         "test_metrics": test_metrics,
@@ -356,7 +355,7 @@ def main():
     parser.add_argument("--exp_name", type=str, default="E4_kehn_phobert",
                         help="Experiment name")
     parser.add_argument("--backbone", type=str, default="phobert",
-                        choices=["phobert", "vihealthbert"],
+                        choices=["phobert", "vihealthbert", "xlmr_large"],
                         help="Backbone model key")
     parser.add_argument("--epochs", type=int, default=TRAIN_CONFIG["num_epochs"])
     parser.add_argument("--batch_size", type=int, default=TRAIN_CONFIG["batch_size"])
