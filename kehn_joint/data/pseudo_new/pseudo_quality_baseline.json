@@ -1,9 +1,0 @@
-{
-  "samples": 9687,
-  "tokens": 881444,
-  "stuck_punct_tokens": 88022,
-  "stuck_punct_ratio": 0.09986113695254605,
-  "entity_tokens_with_punct": 17012,
-  "bio_invalid_i_tags": 10247,
-  "exact_half_dup_samples": 24
-}

@@ -17,7 +17,7 @@ VIMQ_DATA_DIR = _DATA_ROOT / "ViMQ-main" / "ViMQ-main" / "data"
 TOPIC_DATA_DIR = _DATA_ROOT / "data"
 
 # Data & output dirs (relative — portable giữa local Windows và Colab)
-JOINT_DATA_DIR = KEHN_DIR / "splits"
+JOINT_DATA_DIR = KEHN_DIR / "data"
 JOINT_OUTPUT_DIR = KEHN_DIR / "outputs"
 
 # Existing model directories for pseudo-labeling

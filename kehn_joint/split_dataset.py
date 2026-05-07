@@ -35,7 +35,7 @@ def print_stats(split_name, data):
         print(f"  Intent {label}: {count} ({count/total*100:.2f}%)")
 
 def main():
-    input_file = sys.argv[1] if len(sys.argv) > 1 else 'data_kehn/data_kehn.jsonl'
+    input_file = sys.argv[1] if len(sys.argv) > 1 else r'D:\Chatbot-Y tế\kehn_joint\data\medical_kehn_merged.jsonl'
     
     print(f"Loading data from {input_file}...")
     data = load_data(input_file)
@@ -53,9 +53,9 @@ def main():
     )
     
     # Save splits
-    save_data(train_data, 'splits/train.jsonl')
-    save_data(val_data, 'splits/val.jsonl')
-    save_data(test_data, 'splits/test.jsonl')
+    save_data(train_data, 'data/train.jsonl')
+    save_data(val_data, 'data/val.jsonl')
+    save_data(test_data, 'data/test.jsonl')
     
     # Print stats
     print_stats("Train", train_data)
