@@ -35,18 +35,19 @@ INTENT2ID = {label: idx for idx, label in enumerate(INTENT_LABELS)}
 ID2INTENT = {idx: label for idx, label in enumerate(INTENT_LABELS)}
 N_INTENT = len(INTENT_LABELS)
 
-# NER labels (BIO format, from ViMQ entity_set.txt)
-NER_TAGS = ["O", "B-SYM", "I-SYM", "B-PRO", "I-PRO", "B-DRU", "I-DRU"]
+
+# NER tags: Thêm DUR và SEV để khớp với 10 nhãn trong dataset
+NER_TAGS = ["O", "B-SYM", "I-SYM", "B-PRO", "I-PRO", "B-DRU", "I-DRU", "B-DUR", "I-DUR", "B-SEV"]
 NER2ID = {tag: idx for idx, tag in enumerate(NER_TAGS)}
 ID2NER = {idx: tag for idx, tag in enumerate(NER_TAGS)}
 N_NER_TAG = len(NER_TAGS)
 
 # ViMQ entity type → BIO prefix mapping
-ENTITY_TYPE_MAP = {
-    "SYMPTOM_AND_DISEASE": "SYM",
-    "medical_procedure": "PRO",
-    "drug": "DRU",
-}
+# Intent labels (Giữ nguyên vì dataset có 4 loại khớp)
+INTENT_LABELS = ["method_diagnosis", "treatment", "severity", "cause"]
+INTENT2ID = {label: idx for idx, label in enumerate(INTENT_LABELS)}
+ID2INTENT = {idx: label for idx, label in enumerate(INTENT_LABELS)}
+N_INTENT = len(INTENT_LABELS)
 
 # Topic labels (16 classes — dropped traditional_medicine [1 sample],
 # merged oncology → internal_medicine [17 samples])
@@ -55,7 +56,7 @@ TOPIC_LABELS = [
     "ent", "gastroenterology", "internal_medicine", "neurology",
     "nutrition", "obstetrics_gynecology", "ophthalmology",
     "orthopedics", "pediatrics", "reproductive_endocrinology",
-    "rheumatology", "urology",
+    "rheumatology", "urology", "oncology"  # <--- THÊM Ở ĐÂY
 ]
 
 # Remap rules applied during preprocessing (oncology → internal_medicine)
