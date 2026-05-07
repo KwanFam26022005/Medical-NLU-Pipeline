@@ -51,13 +51,15 @@ N_INTENT = len(INTENT_LABELS)
 
 # Topic labels (16 classes — dropped traditional_medicine [1 sample],
 # merged oncology → internal_medicine [17 samples])
+# config_joint.py
 TOPIC_LABELS = [
     "cardiology", "dentistry", "dermatology", "endocrinology",
     "ent", "gastroenterology", "internal_medicine", "neurology",
     "nutrition", "obstetrics_gynecology", "ophthalmology",
     "orthopedics", "pediatrics", "reproductive_endocrinology",
-    "rheumatology", "urology", "oncology" 
+    "rheumatology", "urology"
 ]
+
 
 # Remap rules applied during preprocessing (oncology → internal_medicine)
 TOPIC_REMAP = {"oncology": "internal_medicine"}
