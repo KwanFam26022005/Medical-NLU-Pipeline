@@ -333,6 +333,15 @@ def train(args):
             patience_counter = 0
             torch.save(model.state_dict(), output_dir / "best_model.pt")
             print(f"   💾 New best! Topic F1={topic_f1:.4f} (saved)")
+            
+            # [Added] Backup checkpoint to Google Drive for large models on Colab
+            if args.backbone == "xlmr_large":
+                drive_dir = Path("/content/drive/MyDrive/Medical_NLU_Checkpoints")
+                if Path("/content/drive/MyDrive").exists():
+                    drive_dir.mkdir(parents=True, exist_ok=True)
+                    drive_file = drive_dir / f"{args.exp_name}_best.pt"
+                    torch.save(model.state_dict(), drive_file)
+                    print(f"   ☁️ Backup XLM-R Large checkpoint to GDrive: {drive_file}")
         else:
             patience_counter += 1
             if patience_counter >= TRAIN_CONFIG["patience"] and epoch > 10:
