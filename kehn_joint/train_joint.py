@@ -152,12 +152,7 @@ def train(args):
     backbone_path = MODEL_CONFIG.get(args.backbone, MODEL_CONFIG["phobert"])
 
     # 2. Hidden dim cho XLM-R Large
-    if args.backbone == "xlmr_large":
-        MODEL_CONFIG["hidden_dim"] = 1024
-        print("✨ Detected XLM-R Large: Setting hidden_dim to 1024")
-    else:
-        MODEL_CONFIG["hidden_dim"] = 768
-
+    MODEL_CONFIG["hidden_dim"] = 768
     print("\n📂 Loading data...")
     train_loader, val_loader, test_loader = create_dataloaders(
         tokenizer_name=backbone_path,
@@ -337,13 +332,6 @@ def train(args):
             print(f"   💾 New best! Topic F1={topic_f1:.4f} (saved)")
             
             # [Added] Backup checkpoint to Google Drive for large models on Colab
-            if args.backbone == "xlmr_large":
-                drive_dir = Path("/content/drive/MyDrive/Medical_NLU_Checkpoints")
-                if Path("/content/drive/MyDrive").exists():
-                    drive_dir.mkdir(parents=True, exist_ok=True)
-                    drive_file = drive_dir / f"{args.exp_name}_best.pt"
-                    torch.save(model.state_dict(), drive_file)
-                    print(f"   ☁️ Backup XLM-R Large checkpoint to GDrive: {drive_file}")
         else:
             patience_counter += 1
             if patience_counter >= TRAIN_CONFIG["patience"] and epoch > 10:
@@ -382,7 +370,7 @@ def main():
     parser = argparse.ArgumentParser(description="Train KEHN Joint Model")
     parser.add_argument("--exp_name",   type=str, default="E4_kehn_phobert")
     parser.add_argument("--backbone",   type=str, default="phobert",
-                        choices=["phobert", "vihealthbert", "xlmr_large"])
+                        choices=["phobert", "vihealthbert", "xlmr_base"])
     parser.add_argument("--epochs",     type=int, default=TRAIN_CONFIG["num_epochs"])
     parser.add_argument("--batch_size", type=int, default=TRAIN_CONFIG["batch_size"])
     parser.add_argument("--lr",         type=float, default=TRAIN_CONFIG["learning_rate"])
