@@ -20,7 +20,7 @@ from transformers import AutoModel
 from torchcrf import CRF
 
 from .co_interactive import LabelAttention, CoInteractiveBlock
-from .config_joint import NER_TAGS, NER2ID, NER_ENTITY_TYPES
+from ..config_joint import NER_TAGS, NER2ID, NER_ENTITY_TYPES
 
 
 # ──────────────────────────────────────────────────────────────────────
