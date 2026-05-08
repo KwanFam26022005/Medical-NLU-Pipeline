@@ -146,7 +146,7 @@ TRAIN_CONFIG = {
     # Loss weights per phase
     "loss_weights": {
         "topic_only":    {"topic": 1.0, "intent": 0.0, "ner": 0.0},
-        "mining_only":   {"topic": 0.0, "intent": 1.0, "ner": 1.0},
+        "mining_only":   {"topic": 0.1, "intent": 1.0, "ner": 1.0},
         "joint_no_prop": {"topic": 0.5, "intent": 0.3, "ner": 0.2},
         "full":          {"topic": 0.5, "intent": 0.3, "ner": 0.2},
     },
