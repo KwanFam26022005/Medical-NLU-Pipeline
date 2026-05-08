@@ -105,7 +105,7 @@ N_TOPIC     = len(TOPIC_LABELS)  # 17
 MODEL_CONFIG = {
     "phobert":      "vinai/phobert-base-v2",
     "vihealthbert": "demdecuong/vihealthbert-base-word",
-    "xlmr_large":   "FacebookAI/xlm-roberta-large",
+    "xlmr_base":   "FacebookAI/xlm-roberta-base",
 
     "hidden_dim":              768,
     "num_co_interactive_blocks": 2,
