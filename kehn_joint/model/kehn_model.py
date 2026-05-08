@@ -405,20 +405,55 @@ class KEHN(nn.Module):
             ner_labels_crf = ner_labels.clone()
             ner_labels_crf[ner_labels_crf == -100] = 0
 
-            # ✅ FIX: Dùng first-subword mask thay vì attention_mask.
-            # ner_labels != -100 chỉ True tại: vị trí first sub-token của mỗi word.
-            # CLS, SEP, sub-tokens đều bị loại → không còn O→I-X illegal transitions.
-            first_token_mask = (ner_labels != -100) & mask.bool()  # ← THAY ĐỔI
+            # ── [BUG FIX] Compact to word-level sequence trước khi vào CRF ──
+            #
+            # VẤN ĐỀ CŨ (gây loss ~800k):
+            #   first_token_mask = (ner_labels != -100) & mask.bool()
+            #   → Tạo non-contiguous boolean mask: [F,T,F,T,T,F,...]
+            #   → torchcrf yêu cầu LEFT-ALIGNED contiguous mask [T,T,T,F,F,F]
+            #   → Với non-contiguous mask, forward algorithm tính partition
+            #     function sai (hoặc treat seq_len=0) → log Z → +∞ → loss → 800k
+            #
+            # VẤN ĐỀ CỦA mask.bool() (code trước đó):
+            #   → Sub-tokens có label O, nhưng gold path có thể chứa O→I-X
+            #     (vd: B-SYM(subword1) | O(subword2) | I-SYM(word2))
+            #   → O→I-X bị constrain = -1e9 → gold_score = -inf → loss = +inf
+            #
+            # FIX ĐÚNG: Compact logits và labels chỉ giữ first-subword positions
+            # → sequence hoàn toàn word-level, contiguous, không có O-gap.
+            # → CRF hoạt động đúng, BIO constraints không bị vi phạm.
+
+            # first_subword_mask: True chỉ tại first sub-token của mỗi word thực
+            # (CLS, SEP, padding, sub-tokens đều là -100 → False)
+            first_subword_mask = (ner_labels != -100)       # [B, L]
+            valid_counts = first_subword_mask.sum(dim=1)    # [B] — số word-tokens mỗi sample
+            max_valid = int(valid_counts.max().item())
+
+            B, L, C = logits_ner.shape
+            dev = logits_ner.device
+
+            # Compact tensors: [B, max_valid, C] và [B, max_valid]
+            compact_logits = logits_ner.new_zeros(B, max_valid, C)
+            compact_labels = ner_labels_crf.new_zeros(B, max_valid)
+            compact_mask   = torch.zeros(B, max_valid, dtype=torch.bool, device=dev)
+
+            for b in range(B):
+                idx = first_subword_mask[b].nonzero(as_tuple=True)[0]  # word positions
+                n   = idx.shape[0]
+                compact_logits[b, :n] = logits_ner[b, idx]
+                compact_labels[b, :n] = ner_labels_crf[b, idx]
+                compact_mask[b, :n]   = True
+            # compact_mask là left-aligned contiguous → torchcrf hoạt động đúng ✓
 
             loss_ner_sum = -self.crf(
-                logits_ner.float(),       # ← cast fp32 để tránh fp16 numerical issues trong CRF
-                ner_labels_crf,
-                mask=first_token_mask,    # ← THAY ĐỔI (cũ là mask.bool())
+                compact_logits.float(),   # fp32 để tránh fp16 numerical issues
+                compact_labels,
+                mask=compact_mask,        # contiguous left-aligned mask ✓
                 reduction='none'
             )
 
-            # Normalize theo số word-level tokens (không phải sub-tokens)
-            n_valid = first_token_mask.float().sum(dim=1).clamp(min=1)  # ← cập nhật
+            # Normalize theo số word-level tokens (không tính CLS/SEP/sub-tokens)
+            n_valid = valid_counts.float().to(dev).clamp(min=1)
             loss_ner_per_sample = loss_ner_sum / n_valid
 
             # [+CWL] Nhân với ner_confidence của từng sample
