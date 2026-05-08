@@ -402,22 +402,24 @@ class KEHN(nn.Module):
 
         # ── NER Loss [+CWL] (CRF NLL, Confidence-Weighted) ──────
         if weights["ner"] > 0 and ner_labels is not None:
-            # Replace -100 padding → 0 (O tag); CRF mask xử lý padding
             ner_labels_crf = ner_labels.clone()
             ner_labels_crf[ner_labels_crf == -100] = 0
-            crf_mask = mask.bool()
 
-            # reduction='none' → per-sample NLL [B] (sum over sequence)
-            # Sau đó normalize theo sequence length để công bằng giữa các
-            # câu dài/ngắn (torchcrf sum mode, chia cho n_valid_tokens)
+            # ✅ FIX: Dùng first-subword mask thay vì attention_mask.
+            # ner_labels != -100 chỉ True tại: vị trí first sub-token của mỗi word.
+            # CLS, SEP, sub-tokens đều bị loại → không còn O→I-X illegal transitions.
+            first_token_mask = (ner_labels != -100) & mask.bool()  # ← THAY ĐỔI
+
             loss_ner_sum = -self.crf(
-                logits_ner, ner_labels_crf,
-                mask=crf_mask, reduction='none'
-            )  # [B] — dương vì chúng ta negate NLL
+                logits_ner.float(),       # ← cast fp32 để tránh fp16 numerical issues trong CRF
+                ner_labels_crf,
+                mask=first_token_mask,    # ← THAY ĐỔI (cũ là mask.bool())
+                reduction='none'
+            )
 
-            # Normalize theo số token thực (không phải padding)
-            n_valid = crf_mask.float().sum(dim=1).clamp(min=1)  # [B]
-            loss_ner_per_sample = loss_ner_sum / n_valid          # [B]
+            # Normalize theo số word-level tokens (không phải sub-tokens)
+            n_valid = first_token_mask.float().sum(dim=1).clamp(min=1)  # ← cập nhật
+            loss_ner_per_sample = loss_ner_sum / n_valid
 
             # [+CWL] Nhân với ner_confidence của từng sample
             if ner_confidence is not None:
