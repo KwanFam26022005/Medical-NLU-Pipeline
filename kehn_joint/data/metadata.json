@@ -7,52 +7,53 @@
     "intent_classification",
     "topic_classification"
   ],
-  "num_samples": 16454,
-  "total_tokens": 913581,
-  "avg_tokens_per_sample": 55.52,
+  "num_samples": 18390,
+  "total_tokens": 951177,
+  "avg_tokens_per_sample": 51.72,
   "max_tokens": 481,
   "min_tokens": 2,
   "avg_characters_per_sample": 259.7,
   "source_distribution": {
-    "hospital": 9687,
-    "vimq": 6767
+    "vimq": 8444,
+    "hospital": 9946
   },
   "topic_distribution": {
-    "pediatrics": 3013,
-    "obstetrics_gynecology": 3092,
+    "neurology": 895,
+    "dentistry": 400,
     "cardiology": 1669,
     "urology": 866,
-    "reproductive_endocrinology": 1353,
     "internal_medicine": 1802,
-    "nutrition": 106,
-    "neurology": 895,
-    "orthopedics": 1537,
+    "pediatrics": 3013,
+    "reproductive_endocrinology": 1353,
+    "ent": 400,
     "gastroenterology": 853,
-    "dentistry": 254,
-    "dermatology": 181,
-    "rheumatology": 190,
-    "ent": 297,
-    "ophthalmology": 176,
-    "endocrinology": 153,
-    "oncology": 17
+    "obstetrics_gynecology": 3092,
+    "nutrition": 500,
+    "ophthalmology": 420,
+    "orthopedics": 1537,
+    "dermatology": 420,
+    "oncology": 300,
+    "endocrinology": 450,
+    "rheumatology": 420
   },
   "intent_distribution": {
-    "method_diagnosis": 7594,
-    "severity": 3484,
-    "cause": 1156,
-    "treatment": 4220
+    "method_diagnosis": 8496,
+    "severity": 3722,
+    "treatment": 4876,
+    "cause": 1296
   },
   "ner_distribution": {
-    "O": 661068,
-    "B-PRO": 17914,
-    "I-PRO": 17226,
-    "B-SYM": 84446,
-    "I-SYM": 99214,
-    "B-DUR": 12421,
-    "I-DUR": 12421,
-    "B-DRU": 2465,
-    "I-DRU": 2748,
-    "B-SEV": 3658
+    "B-SYM": 87955,
+    "I-SYM": 103578,
+    "O": 688576,
+    "B-DUR": 12530,
+    "I-DUR": 12530,
+    "B-PRO": 18545,
+    "I-PRO": 17766,
+    "B-SEV": 3741,
+    "B-DRU": 2806,
+    "I-DRU": 3117,
+    "I-SEV": 33
   },
   "ner_labels": [
     "B-DRU",
@@ -63,6 +64,7 @@
     "I-DRU",
     "I-DUR",
     "I-PRO",
+    "I-SEV",
     "I-SYM",
     "O"
   ],
@@ -76,7 +78,8 @@
     "I-DUR": 6,
     "I-PRO": 7,
     "I-SYM": 8,
-    "O": 9
+    "O": 9,
+    "I-SEV": 10
   },
   "id2ner": {
     "0": "B-DRU",
@@ -88,7 +91,8 @@
     "6": "I-DUR",
     "7": "I-PRO",
     "8": "I-SYM",
-    "9": "O"
+    "9": "O",
+    "10": "I-SEV"
   },
   "topic2id": {
     "cardiology": 0,
@@ -135,7 +139,7 @@
   "broken_samples": 0,
   "validation_errors": {},
   "o_tag_ratio_percent": 72.36,
-  "avg_ner_confidence": 1.0,
+  "avg_ner_confidence": 0.8927,
   "avg_intent_confidence": 0.9944,
   "avg_topic_confidence": 0.9881,
   "recommended_models": [
@@ -153,5 +157,18 @@
     "BERT",
     "Transformers",
     "HuggingFace Datasets"
+  ],
+  "min_ner_confidence": 0.8,
+  "max_ner_confidence": 0.95,
+  "augmented_samples": 1936,
+  "augmented_topics": [
+    "dentistry",
+    "dermatology",
+    "endocrinology",
+    "ent",
+    "nutrition",
+    "oncology",
+    "ophthalmology",
+    "rheumatology"
   ]
 }
