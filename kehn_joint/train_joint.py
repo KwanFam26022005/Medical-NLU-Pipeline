@@ -275,7 +275,9 @@ def train(args):
                     ner_confidence=ner_confidence,   # [+CWL]
                 )
                 loss = output["loss"] / accum_steps
-
+            # Thêm kiểm tra loss để debug nếu cần
+            if torch.isnan(loss) or loss.item() > 10000:
+                print(f"⚠️ Cảnh báo: Loss bất thường tại step {step}: {loss.item()}")
             scaler.scale(loss).backward()
 
             if (step + 1) % accum_steps == 0 or (step + 1) == len(train_loader):

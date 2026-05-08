@@ -51,11 +51,39 @@ class JointDataset(Dataset):
 
     def __len__(self) -> int:
         return len(self.raw_data)
-
+    # pyrefly: ignore [invalid-annotation]
+    def sanitize_bio_tags(ner_tags: List[str]) -> List[str]:
+        """
+        Đảm bảo chuỗi BIO hợp lệ: I-X phải luôn theo sau B-X hoặc I-X cùng loại.
+        Nếu sai, chuyển I-X thành B-X.
+        """
+        sanitized = []
+        prev_tag_type = None # Lưu loại entity phía trước (ví dụ: SYM, PRO)
+        
+        for tag in ner_tags:
+            if tag == "O":
+                sanitized.append("O")
+                prev_tag_type = None
+            elif tag.startswith("B-"):
+                sanitized.append(tag)
+                prev_tag_type = tag.split("-")[1]
+            elif tag.startswith("I-"):
+                current_tag_type = tag.split("-")[1]
+                if prev_tag_type != current_tag_type:
+                    # Vi phạm: I-X sau O hoặc sau I-Y. Chuyển thành B-X.
+                    sanitized.append(f"B-{current_tag_type}")
+                    prev_tag_type = current_tag_type
+                else:
+                    sanitized.append(tag)
+                    # prev_tag_type giữ nguyên
+            else:
+                sanitized.append("O")
+                prev_tag_type = None
+        return sanitized
     def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
         item = self.raw_data[idx]
         words = item["words"]
-        ner_tags = item["ner_tags"]
+        ner_tags = self.sanitize_bio_tags(item["ner_tags"])
         token_intent_ids = item.get("token_intent_ids", [item.get("intent_label_id", 0)] * len(words))
 
         # Tokenize word-by-word (giống Trạm 2A bypass word_ids)

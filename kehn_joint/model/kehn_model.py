@@ -17,6 +17,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import AutoModel
+# pyrefly: ignore [missing-import]
 from torchcrf import CRF
 
 from .co_interactive import LabelAttention, CoInteractiveBlock
@@ -176,18 +177,20 @@ class KEHN(nn.Module):
 
     # ── CRF Constraint API ─────────────────────────────────────────────
 
+    # Trong file kehn_model.py
+
     def _apply_crf_constraints(self):
         """
-        Gán −1e9 vào các ô transition bất hợp lệ (không qua gradient).
-        Gọi một lần khi init, rồi gọi constrain_crf_transitions()
-        sau mỗi optimizer.step() trong vòng huấn luyện.
+        Gán penalty vào các ô transition bất hợp lệ.
+        Sử dụng -10000.0 thay vì -1e9 để tương thích với FP16 (max -65504).
         """
+        penalty_value = -10000.0 # Giá trị an toàn cho FP16
         with torch.no_grad():
             self.crf.start_transitions.data.masked_fill_(
-                self._crf_illegal_start, -1e9
+                self._crf_illegal_start, penalty_value
             )
             self.crf.transitions.data.masked_fill_(
-                self._crf_illegal_trans, -1e9
+                self._crf_illegal_trans, penalty_value
             )
 
     def constrain_crf_transitions(self):
