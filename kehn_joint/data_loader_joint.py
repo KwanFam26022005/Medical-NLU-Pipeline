@@ -15,7 +15,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import AutoTokenizer
 
-from .config_joint import NER2ID, JOINT_DATA_DIR
+from .config_joint import NER2ID, JOINT_DATA_DIR, TOPIC2ID
 
 
 class JointDataset(Dataset):
@@ -94,7 +94,7 @@ class JointDataset(Dataset):
             "input_ids": torch.tensor(input_ids, dtype=torch.long),
             "attention_mask": torch.tensor(attention_mask, dtype=torch.long),
             "ner_labels": torch.tensor(ner_label_ids, dtype=torch.long),
-            "topic_label": torch.tensor(item["topic_label_id"], dtype=torch.long),
+            "topic_label": torch.tensor(TOPIC2ID.get(item.get("topic_label", ""), item.get("topic_label_id", 0)), dtype=torch.long),
             "intent_label": torch.tensor(item["intent_label_id"], dtype=torch.long),
             "token_intent_ids": torch.tensor(intent_label_ids, dtype=torch.long),
         }
