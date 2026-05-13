@@ -126,6 +126,8 @@ class JointDataset(Dataset):
             "topic_label": torch.tensor(TOPIC2ID.get(item.get("topic_label", ""), item.get("topic_label_id", 0)), dtype=torch.long),
             "intent_label": torch.tensor(item["intent_label_id"], dtype=torch.long),
             "token_intent_ids": torch.tensor(intent_label_ids, dtype=torch.long),
+            # [+CWL] Per-sample NER confidence for Confidence-Weighted Loss
+            "ner_confidence": torch.tensor(item.get("ner_confidence", 1.0), dtype=torch.float),
         }
 
 
@@ -148,6 +150,7 @@ class JointCollator:
         topic_labels = []
         intent_labels = []
         token_intent_list = []
+        ner_confidence_list = []  # [+CWL]
 
         for item in batch:
             seq_len = item["input_ids"].size(0)
@@ -168,6 +171,8 @@ class JointCollator:
                 token_intent_list.append(
                     torch.cat([item["token_intent_ids"], torch.full((pad_len,), self.ner_pad_id, dtype=torch.long)])
                 )
+            # [+CWL] Collect per-sample confidence (scalar, no padding needed)
+            ner_confidence_list.append(item.get("ner_confidence", torch.tensor(1.0)))
 
         result = {
             "input_ids": torch.stack(input_ids_list),
@@ -175,6 +180,8 @@ class JointCollator:
             "ner_labels": torch.stack(ner_labels_list),
             "topic_labels": torch.stack(topic_labels),
             "intent_labels": torch.stack(intent_labels),
+            # [+CWL] Per-sample NER confidence: [B] float tensor
+            "ner_confidence": torch.stack(ner_confidence_list),
         }
         if token_intent_list:
             result["token_intent_ids"] = torch.stack(token_intent_list)
